@@ -34,9 +34,14 @@ export default function PlayerPage() {
     resetError
   } = useHlsPlayer();
   
+  // PLAYBACK STATE - Changes to these will cause VideoPlayer to remount (key={currentChannel.stream_id})
+  // Only updated on: initial load and explicit channel selection (Enter key or click)
   const [currentChannel, setCurrentChannel] = useState<LiveStream | null>(null);
   const [currentCategory, setCurrentCategory] = useState<string>('');
-  const [menuCategory, setMenuCategory] = useState<string>(''); // Category shown in menu
+  
+  // NAVIGATION STATE - UI only, changes do NOT affect VideoPlayer playback
+  // Updated on: menu open/close, category/channel navigation with arrow keys
+  const [menuCategory, setMenuCategory] = useState<string>('');
   const [streamsMap, setStreamsMap] = useState<Map<string, LiveStream[]>>(new Map());
   const [isInitializing, setIsInitializing] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -137,6 +142,8 @@ export default function PlayerPage() {
   const menuChannels = streamsMap.get(menuCategory) || [];
 
   // Keyboard navigation handlers
+  // KEY FIX: Menu open/close only updates menu state (menuCategory, streamsMap, isMenuOpen)
+  // Does NOT update currentChannel or currentCategory, so VideoPlayer doesn't remount
   const handleToggleMenu = useCallback(() => {
     setIsMenuOpen(prev => {
       const newState = !prev;
@@ -164,6 +171,8 @@ export default function PlayerPage() {
     setSelectedChannelIndex(prev => (prev - 1 + menuChannels.length) % menuChannels.length);
   }, [menuChannels.length]);
 
+  // KEY FIX: Category navigation ONLY updates menu state, NOT playback state
+  // User can browse categories without changing the currently playing channel
   const handleMoveNextCategory = useCallback(async () => {
     if (!categories || categories.length === 0) return;
     const currentIndex = categories.findIndex(c => c.category_id === menuCategory);
@@ -183,9 +192,11 @@ export default function PlayerPage() {
     
     setMenuCategory(nextCategoryId);
     setSelectedChannelIndex(0);
-    // NOTE: We do NOT change currentChannel or currentCategory here
+    // CRITICAL: We do NOT change currentChannel or currentCategory here
+    // Channel only changes on explicit selection (handleSelect)
   }, [categories, menuCategory, streamsMap]);
 
+  // KEY FIX: Same as handleMoveNextCategory - only updates menu state
   const handleMovePreviousCategory = useCallback(async () => {
     if (!categories || categories.length === 0) return;
     const currentIndex = categories.findIndex(c => c.category_id === menuCategory);
@@ -205,7 +216,7 @@ export default function PlayerPage() {
     
     setMenuCategory(prevCategoryId);
     setSelectedChannelIndex(0);
-    // NOTE: We do NOT change currentChannel or currentCategory here
+    // CRITICAL: We do NOT change currentChannel or currentCategory here
   }, [categories, menuCategory, streamsMap]);
 
   const handleSelect = useCallback(() => {
@@ -225,6 +236,8 @@ export default function PlayerPage() {
   }, []);
 
   // Handle category selection from UI (click on category tab)
+  // KEY FIX: Category selection (click on category tab) only updates menu state
+  // User can browse different categories without changing the playing channel
   const handleCategorySelect = useCallback(async (categoryId: string) => {
     // Load channels for the selected category if not already loaded
     if (!streamsMap.has(categoryId)) {
@@ -238,8 +251,8 @@ export default function PlayerPage() {
     
     setMenuCategory(categoryId);
     setSelectedChannelIndex(0);
-    // NOTE: We do NOT change currentChannel or currentCategory here
-    // The channel only changes when user selects one with Enter or click
+    // CRITICAL: We do NOT change currentChannel or currentCategory here
+    // Channel only changes when user selects one with Enter key or click on channel
   }, [streamsMap]);
 
   // Setup keyboard navigation
