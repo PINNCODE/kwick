@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "IPTV Player",
-  description: "Minimalist IPTV player with Xtream Codes support",
+  title: "Kwick - TV Simple. Sin Distracciones.",
+  description: "La experiencia de streaming más sencilla. Solo canales de TV en vivo. Sin VOD, sin menús complejos. Acceso inmediato con tus credenciales de IPTV.",
 };
 
 export default function RootLayout({
