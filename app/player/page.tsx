@@ -7,6 +7,7 @@ import { useChannelPersistence } from '../hooks/useChannelPersistence';
 import { useHlsPlayer } from '../hooks/useHlsPlayer';
 import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation';
 import { VideoPlayer } from '../components/player/VideoPlayer';
+import { ErrorToast } from '../components/player/ErrorToast';
 import { MenuOverlay } from '../components/menu/MenuOverlay';
 import { CategoryList } from '../components/menu/CategoryList';
 import { ChannelGrid } from '../components/menu/ChannelGrid';
@@ -22,6 +23,7 @@ export default function PlayerPage() {
   const { 
     playerState, 
     error, 
+    retryCount,
     isRetrying, 
     handleError, 
     handleRetry, 
@@ -257,13 +259,15 @@ export default function PlayerPage() {
         </div>
       )}
 
-      {/* Error Toast */}
-      {error && (
-        <div className="absolute top-4 right-4 bg-red-900/90 text-white px-4 py-3 rounded-lg shadow-lg z-30 max-w-sm">
-          <p className="font-medium">Error de conexión</p>
-          <p className="text-sm text-red-200 mt-1">{error.message}</p>
-        </div>
-      )}
+      {/* Error Toast System */}
+      <ErrorToast
+        error={error}
+        isRetrying={isRetrying}
+        retryCount={retryCount}
+        onDismiss={() => {
+          // Toast auto-dismisses on recovery
+        }}
+      />
 
       {/* Menu Overlay */}
       <MenuOverlay isOpen={isMenuOpen} onClose={handleClose}>
