@@ -142,19 +142,19 @@ app/
 
 **Solution**: Renamed to `contracts/player-interface.md`.
 
+#### Fix 5: Player Initialization Logic
+**Problem**: Player stuck on "Cargando canales..." loader - never started playback.
+
+**Solution**: Fixed inverted boolean condition in initialization check.
+- File: `app/player/page.tsx`
+- Changed: `if (categories && !isInitializing)` → `if (categories && isInitializing)`
+
 ### Commit History
 
 ```
+b32d048 fix: correct initialization condition in player page
 e1335c3 fix: use Next.js router instead of window.location for navigation
 562be5f fix: correct import paths and build errors
-ba85437 feat: polish phase complete - final touches and documentation
-dca6772 feat: user story 4 complete - error handling and recovery
-db8f874 feat: user story 3 complete - keyboard navigation
-a2b1c24 feat: user story 2 complete - auto-play and channel persistence
-d9b2a4a feat: user story 1 complete - login and authentication
-87b3ce1 feat: foundational phase complete - API client and routes
-308017b feat: setup phase complete - dependencies and utilities
-e8ee9b8 docs: add IPTV player specification, plan, data model, contracts, and tasks
 ```
 
 ## 🚀 Ready for Testing

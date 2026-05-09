@@ -169,6 +169,26 @@ specs/001-iptv-player/contracts/player-interface.ts → player-interface.md
 
 Then use: `import { useXtreamAuth } from '@/hooks/useXtreamAuth'`
 
+### Fix 5: Player Initialization Condition
+
+**Issue**: Player stuck on "Cargando canales..." loader indefinitely.
+
+**Root Cause**: Inverted boolean condition prevented initialization from running.
+
+```typescript
+// Before (Broken)
+if (categories && !isInitializing) {  // ❌ Never true because isInitializing starts as true
+  initPlayer();
+}
+
+// After (Fixed)
+if (categories && isInitializing) {   // ✅ Correctly triggers when categories load
+  initPlayer();
+}
+```
+
+**File**: `app/player/page.tsx`
+
 ---
 
 ## Verification Checklist
@@ -180,6 +200,7 @@ After applying these fixes, verify:
 - [ ] Build passes without TypeScript errors
 - [ ] All imports resolve correctly
 - [ ] HLS events trigger properly
+- [ ] Player initializes and auto-plays first channel
 - [ ] No console errors during normal operation
 
 ---
