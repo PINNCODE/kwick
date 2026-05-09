@@ -92,7 +92,7 @@ export default function PlayerPage() {
       setIsInitializing(false);
     };
 
-    if (categories && !isInitializing) {
+    if (categories && isInitializing) {
       initPlayer();
     }
   }, [categories, getAutoPlayChannel, saveCurrentChannel, isInitializing]);
