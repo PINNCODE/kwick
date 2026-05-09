@@ -21,7 +21,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 export default function PlayerPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: isAuthLoading } = useXtreamAuth();
-  const { saveCurrentChannel, getAutoPlayChannel } = useChannelPersistence();
+  const { saveCurrentChannel, getLastWatchedChannel, getAutoPlayChannel } = useChannelPersistence();
   const { 
     playerState, 
     error, 
@@ -48,7 +48,7 @@ export default function PlayerPage() {
     { revalidateOnFocus: false, dedupingInterval: 300000 } // 5 minutes
   );
 
-  // Initialize player
+  // Initialize player - only load channels for the selected category
   useEffect(() => {
     const initPlayer = async () => {
       if (!categories || categories.length === 0) return;
@@ -63,29 +63,56 @@ export default function PlayerPage() {
         password: credentials.password,
       });
 
-      // Load streams for all categories
-      const streams = new Map<string, LiveStream[]>();
-      for (const category of categories) {
-        try {
-          const categoryStreams = await xtreamApi.getStreams(category.category_id);
-          streams.set(category.category_id, categoryStreams);
-        } catch (error) {
-          console.error(`Failed to load streams for category ${category.category_id}:`, error);
+      // Determine which category to load first
+      let targetCategoryId = '';
+      const lastChannel = await getLastWatchedChannel();
+      
+      if (lastChannel) {
+        // Check if the last channel's category still exists
+        const categoryExists = categories.some(c => c.category_id === lastChannel.categoryId);
+        if (categoryExists) {
+          targetCategoryId = lastChannel.categoryId;
         }
+      }
+      
+      // If no valid last category, use the first one
+      if (!targetCategoryId) {
+        targetCategoryId = categories[0].category_id;
+      }
+
+      // Load streams ONLY for the target category
+      const streams = new Map<string, LiveStream[]>();
+      try {
+        const categoryStreams = await xtreamApi.getStreams(targetCategoryId);
+        streams.set(targetCategoryId, categoryStreams);
+      } catch (error) {
+        console.error(`Failed to load streams for category ${targetCategoryId}:`, error);
       }
       setStreamsMap(streams);
 
-      // Determine which channel to play
-      const { channel, categoryId } = await getAutoPlayChannel(categories, streams);
+      // Determine which channel to play from the loaded category
+      let channelToPlay: LiveStream | null = null;
       
-      if (channel) {
-        setCurrentChannel(channel);
-        setCurrentCategory(categoryId);
-        saveCurrentChannel(channel);
+      if (lastChannel && lastChannel.categoryId === targetCategoryId) {
+        // Try to find the last watched channel in the loaded category
+        const categoryStreams = streams.get(targetCategoryId) || [];
+        channelToPlay = categoryStreams.find(c => c.stream_id === lastChannel.streamId) || null;
+      }
+      
+      // If no last channel or not found, use the first channel of the category
+      if (!channelToPlay) {
+        const categoryStreams = streams.get(targetCategoryId) || [];
+        channelToPlay = categoryStreams[0] || null;
+      }
+      
+      if (channelToPlay) {
+        setCurrentChannel(channelToPlay);
+        setCurrentCategory(targetCategoryId);
+        saveCurrentChannel(channelToPlay);
         
         // Set selected index
-        const categoryStreams = streams.get(categoryId) || [];
-        const index = categoryStreams.findIndex(c => c.stream_id === channel.stream_id);
+        const categoryStreams = streams.get(targetCategoryId) || [];
+        const index = categoryStreams.findIndex(c => c.stream_id === channelToPlay!.stream_id);
         setSelectedChannelIndex(index >= 0 ? index : 0);
       }
 
@@ -95,7 +122,7 @@ export default function PlayerPage() {
     if (categories && isInitializing) {
       initPlayer();
     }
-  }, [categories, getAutoPlayChannel, saveCurrentChannel, isInitializing]);
+  }, [categories, getLastWatchedChannel, saveCurrentChannel, isInitializing]);
 
   // Handle channel change
   const handleChannelChange = useCallback((channel: LiveStream) => {
