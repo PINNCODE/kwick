@@ -4,7 +4,7 @@ import { useState, FormEvent } from 'react';
 import { useXtreamAuth } from '../../hooks/useXtreamAuth';
 
 export function LoginForm() {
-  const [host, setHost] = useState('');
+  const [host, setHost] = useState('https://ftvpro.net:8443');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   
