@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import { useXtreamAuth } from '../hooks/useXtreamAuth';
 import { useChannelPersistence } from '../hooks/useChannelPersistence';
@@ -18,6 +19,7 @@ import { getCredentials } from '../lib/storage';
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function PlayerPage() {
+  const router = useRouter();
   const { isAuthenticated, isLoading: isAuthLoading } = useXtreamAuth();
   const { saveCurrentChannel, getAutoPlayChannel } = useChannelPersistence();
   const { 
@@ -183,9 +185,9 @@ export default function PlayerPage() {
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!isAuthLoading && !isAuthenticated) {
-      window.location.href = '/login';
+      router.push('/login');
     }
-  }, [isAuthenticated, isAuthLoading]);
+  }, [isAuthenticated, isAuthLoading, router]);
 
   if (isAuthLoading || isInitializing) {
     return (

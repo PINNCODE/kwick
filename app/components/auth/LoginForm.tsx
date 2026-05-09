@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import { useXtreamAuth } from '../../hooks/useXtreamAuth';
 
 export function LoginForm() {
@@ -9,6 +10,7 @@ export function LoginForm() {
   const [password, setPassword] = useState('');
   
   const { login, isLoading, error, clearError } = useXtreamAuth();
+  const router = useRouter();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -32,8 +34,8 @@ export function LoginForm() {
     });
 
     if (success) {
-      // Redirect to player will be handled by the page component
-      window.location.href = '/';
+      // Use Next.js router for client-side navigation
+      router.push('/player');
     }
   };
 

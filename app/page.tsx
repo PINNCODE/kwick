@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useXtreamAuth } from './hooks/useXtreamAuth';
 
 export default function Home() {
   const { isAuthenticated, isLoading, checkStoredAuth } = useXtreamAuth();
+  const router = useRouter();
 
   useEffect(() => {
     // Check for stored credentials on mount
@@ -16,13 +18,13 @@ export default function Home() {
     if (!isLoading) {
       if (isAuthenticated) {
         // Redirect to player
-        window.location.href = '/player';
+        router.push('/player');
       } else {
         // Redirect to login
-        window.location.href = '/login';
+        router.push('/login');
       }
     }
-  }, [isAuthenticated, isLoading]);
+  }, [isAuthenticated, isLoading, router]);
 
   // Loading state while checking auth
   return (
