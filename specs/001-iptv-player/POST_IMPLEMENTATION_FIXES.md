@@ -230,6 +230,61 @@ streams.set(targetCategoryId, categoryStreams);
 
 **File**: `app/player/page.tsx`
 
+### Fix 7: Separate Menu Category from Playing Channel
+
+**Issue**: When navigating categories with arrow keys (←/→), the playing channel would change immediately without user confirmation.
+
+**Root Cause**: Single `currentCategory` state was used for both the playing channel and the menu display.
+
+```typescript
+// Before (Confusing UX)
+// Single state for both menu and player
+const [currentCategory, setCurrentCategory] = useState('');
+
+// Changing category immediately affected playback
+const handleMoveNextCategory = () => {
+  setCurrentCategory(nextCategoryId); // ❌ Also changed playing channel
+  setSelectedChannelIndex(0);
+};
+
+// After (Clear Separation)
+// Separate states for menu and player
+const [currentCategory, setCurrentCategory] = useState(''); // Playing category
+const [menuCategory, setMenuCategory] = useState('');       // Menu display category
+
+// Changing menu category does NOT affect playback
+const handleMoveNextCategory = async () => {
+  // Load channels for the new category
+  if (!streamsMap.has(nextCategoryId)) {
+    const categoryStreams = await xtreamApi.getStreams(nextCategoryId);
+    setStreamsMap(prev => new Map(prev).set(nextCategoryId, categoryStreams));
+  }
+  
+  setMenuCategory(nextCategoryId); // ✅ Only changes menu display
+  setSelectedChannelIndex(0);
+  // NOTE: currentChannel and currentCategory unchanged
+};
+
+// Channel only changes on explicit selection
+const handleSelect = () => {
+  const selectedChannel = menuChannels[selectedChannelIndex];
+  if (selectedChannel) {
+    setCurrentChannel(selectedChannel);    // ✅ Now playing changes
+    setCurrentCategory(menuCategory);       // ✅ Playing category updates
+    handleChannelChange(selectedChannel);
+    setIsMenuOpen(false);
+  }
+};
+```
+
+**Benefits**:
+- ✅ User can browse categories without interrupting playback
+- ✅ Channel only changes when explicitly selected
+- ✅ Clear separation between browsing and playing states
+- ✅ Better TV-like experience
+
+**Files**: `app/player/page.tsx`
+
 ---
 
 ## Verification Checklist
@@ -242,6 +297,9 @@ After applying these fixes, verify:
 - [ ] All imports resolve correctly
 - [ ] HLS events trigger properly
 - [ ] Player initializes and auto-plays first channel
+- [ ] Category navigation (arrows) changes menu but NOT playing channel
+- [ ] Channel only changes on explicit selection (Enter/click)
+- [ ] Opening menu syncs with current playing category
 - [ ] No console errors during normal operation
 
 ---

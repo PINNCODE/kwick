@@ -157,9 +157,19 @@ app/
 - Changed: Loop loading all categories → Load only target category
 - Target category determined by: last watched channel's category, or first category as default
 
+#### Fix 7: Separate Menu Category from Playing Channel
+**Problem**: Navigating categories with arrow keys immediately changed the playing channel.
+
+**Solution**: Separated menu category state from playing category state.
+- File: `app/player/page.tsx`
+- Added: `menuCategory` state separate from `currentCategory`
+- Behavior: Category navigation only changes menu display, not playback
+- Channel change: Only happens on explicit selection (Enter/click)
+
 ### Commit History
 
 ```
+e619d2d fix: separate menu category from current playing category
 308eba5 fix: load only channels for selected category instead of all categories
 dbb0e26 docs: document post-implementation fixes and lessons learned
 b32d048 fix: correct initialization condition in player page
