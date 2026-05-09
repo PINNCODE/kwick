@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useXtreamAuth } from '../hooks/useXtreamAuth';
+import { useXtreamAuth } from './hooks/useXtreamAuth';
 
 export default function Home() {
   const { isAuthenticated, isLoading, checkStoredAuth } = useXtreamAuth();

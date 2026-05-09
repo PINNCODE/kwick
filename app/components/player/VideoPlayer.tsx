@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import Hls from 'hls.js';
-import { LiveStream } from '../types/xtream';
-import { PlayerError } from '../types/player';
+import { LiveStream } from '../../types/xtream';
+import { PlayerError } from '../../types/player';
 
 interface VideoPlayerProps {
   channel: LiveStream;
@@ -113,12 +113,11 @@ export function VideoPlayer({
         }
       });
 
-      hls.on(Hls.Events.BUFFER_STALLED, () => {
-        onBuffering?.();
-      });
-
-      hls.on(Hls.Events.BUFFER_FLUSHED, () => {
-        onPlaying?.();
+      // Handle buffer events
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        if (data.details === Hls.ErrorDetails.BUFFER_STALLED_ERROR) {
+          onBuffering?.();
+        }
       });
 
       hls.loadSource(streamUrl);
