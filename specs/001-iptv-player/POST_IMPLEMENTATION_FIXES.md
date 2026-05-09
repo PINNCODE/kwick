@@ -189,6 +189,47 @@ if (categories && isInitializing) {   // ✅ Correctly triggers when categories 
 
 **File**: `app/player/page.tsx`
 
+### Fix 6: Category-Specific Channel Loading
+
+**Issue**: Player loaded channels from ALL categories at startup, causing performance issues and unnecessary API calls.
+
+**Root Cause**: Loop iterating through all categories and fetching their streams.
+
+```typescript
+// Before (Inefficient)
+// Load streams for all categories
+const streams = new Map<string, LiveStream[]>();
+for (const category of categories) {
+  const categoryStreams = await xtreamApi.getStreams(category.category_id);
+  streams.set(category.category_id, categoryStreams);
+}
+
+// After (Optimized)
+// Determine which category to load first
+let targetCategoryId = '';
+const lastChannel = await getLastWatchedChannel();
+
+if (lastChannel) {
+  targetCategoryId = lastChannel.categoryId;
+}
+
+if (!targetCategoryId) {
+  targetCategoryId = categories[0].category_id;
+}
+
+// Load streams ONLY for the target category
+const categoryStreams = await xtreamApi.getStreams(targetCategoryId);
+streams.set(targetCategoryId, categoryStreams);
+```
+
+**Benefits**:
+- ✅ Faster initialization (1 API call instead of N)
+- ✅ Reduced bandwidth usage
+- ✅ Better performance with many categories
+- ✅ Channels loaded on-demand when switching categories
+
+**File**: `app/player/page.tsx`
+
 ---
 
 ## Verification Checklist

@@ -149,9 +149,19 @@ app/
 - File: `app/player/page.tsx`
 - Changed: `if (categories && !isInitializing)` → `if (categories && isInitializing)`
 
+#### Fix 6: Category-Specific Channel Loading
+**Problem**: Player loaded ALL categories' channels at startup, causing performance issues.
+
+**Solution**: Modified to load only the selected category's channels.
+- File: `app/player/page.tsx`
+- Changed: Loop loading all categories → Load only target category
+- Target category determined by: last watched channel's category, or first category as default
+
 ### Commit History
 
 ```
+308eba5 fix: load only channels for selected category instead of all categories
+dbb0e26 docs: document post-implementation fixes and lessons learned
 b32d048 fix: correct initialization condition in player page
 e1335c3 fix: use Next.js router instead of window.location for navigation
 562be5f fix: correct import paths and build errors
