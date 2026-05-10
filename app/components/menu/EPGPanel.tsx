@@ -7,9 +7,30 @@ interface EPGPanelProps {
   onBack: () => void;
 }
 
+// Helper function to decode Base64
+function decodeBase64(str: string): string {
+  if (!str) return '';
+  try {
+    // Check if string looks like Base64
+    if (/^[A-Za-z0-9+/=]+$/.test(str) && str.length > 10 && str.length % 4 === 0) {
+      const decoded = atob(str);
+      // Verify it's valid UTF-8 text
+      if (/^[\x20-\x7E\s]*$/.test(decoded)) {
+        return decoded;
+      }
+    }
+  } catch (e) {
+    // Not valid Base64, return original
+  }
+  return str;
+}
+
 export function EPGPanel({ epg, isActive, isLoading, onBack }: EPGPanelProps) {
   const formatTime = (timestamp: number) => {
-    return new Date(timestamp * 1000).toLocaleTimeString('es-ES', {
+    if (!timestamp || timestamp === 0) return '--:--';
+    const date = new Date(timestamp * 1000);
+    if (isNaN(date.getTime())) return '--:--';
+    return date.toLocaleTimeString('es-ES', {
       hour: '2-digit',
       minute: '2-digit'
     });
@@ -44,7 +65,7 @@ export function EPGPanel({ epg, isActive, isLoading, onBack }: EPGPanelProps) {
             >
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm font-medium">
-                  {program.title || 'Programa'}
+                  {decodeBase64(program.title) || 'Programa'}
                 </span>
                 {index === 0 && (
                   <span className="text-xs bg-red-600 text-white px-2 py-0.5 rounded">

@@ -11,6 +11,24 @@ interface ChannelsPanelProps {
   onBack: () => void;
 }
 
+// Helper function to decode Base64
+function decodeBase64(str: string): string {
+  if (!str) return '';
+  try {
+    // Check if string looks like Base64 (alphanumeric with +/=, no spaces, reasonable length)
+    if (/^[A-Za-z0-9+/=]+$/.test(str) && str.length > 10 && str.length % 4 === 0) {
+      const decoded = atob(str);
+      // Verify it's valid UTF-8 text
+      if (/^[\x20-\x7E\s]*$/.test(decoded)) {
+        return decoded;
+      }
+    }
+  } catch (e) {
+    // Not valid Base64, return original
+  }
+  return str;
+}
+
 export function ChannelsPanel({ channels, selectedId, isActive, isLoading, onSelect, onBack }: ChannelsPanelProps) {
   return (
     <div 
@@ -59,7 +77,7 @@ export function ChannelsPanel({ channels, selectedId, isActive, isLoading, onSel
                   </svg>
                 </div>
               )}
-              <span className="flex-1 text-sm truncate">{channel.name}</span>
+              <span className="flex-1 text-sm truncate">{decodeBase64(channel.name)}</span>
             </button>
           ))
         )}
