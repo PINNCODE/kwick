@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import { useXtreamAuth } from '../hooks/useXtreamAuth';
@@ -39,13 +39,18 @@ export default function PlayerPage() {
   const [currentChannel, setCurrentChannel] = useState<LiveStream | null>(null);
   const [currentCategory, setCurrentCategory] = useState<string>('');
   
-  // NAVIGATION STATE - UI only, changes do NOT affect VideoPlayer playback
-  // Updated on: menu open/close, category/channel navigation with arrow keys
-  const [menuCategory, setMenuCategory] = useState<string>('');
-  const [streamsMap, setStreamsMap] = useState<Map<string, LiveStream[]>>(new Map());
+  // NAVIGATION STATE - Using refs to prevent re-renders when menu state changes
+  // These do NOT affect VideoPlayer playback
+  const menuCategoryRef = useRef<string>('');
+  const streamsMapRef = useRef<Map<string, LiveStream[]>>(new Map());
+  const isMenuOpenRef = useRef<boolean>(false);
+  const selectedChannelIndexRef = useRef<number>(0);
+  
+  // Force re-render for menu UI updates only (doesn't affect VideoPlayer)
+  const [, setMenuTrigger] = useState(0);
+  const forceMenuUpdate = useCallback(() => setMenuTrigger(prev => prev + 1), []);
+  
   const [isInitializing, setIsInitializing] = useState(true);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [selectedChannelIndex, setSelectedChannelIndex] = useState(0);
 
   // Fetch categories
   const { data: categories, error: categoriesError } = useSWR<Category[]>(
@@ -94,7 +99,7 @@ export default function PlayerPage() {
       } catch (error) {
         console.error(`Failed to load streams for category ${targetCategoryId}:`, error);
       }
-      setStreamsMap(streams);
+      streamsMapRef.current = streams;
 
       // Determine which channel to play from the loaded category
       let channelToPlay: LiveStream | null = null;
@@ -114,171 +119,185 @@ export default function PlayerPage() {
       if (channelToPlay) {
         setCurrentChannel(channelToPlay);
         setCurrentCategory(targetCategoryId);
-        setMenuCategory(targetCategoryId); // Sync menu with current category
+        menuCategoryRef.current = targetCategoryId; // Sync menu with current category
         saveCurrentChannel(channelToPlay);
         
         // Set selected index
         const categoryStreams = streams.get(targetCategoryId) || [];
         const index = categoryStreams.findIndex(c => c.stream_id === channelToPlay!.stream_id);
-        setSelectedChannelIndex(index >= 0 ? index : 0);
+        selectedChannelIndexRef.current = index >= 0 ? index : 0;
       }
 
       setIsInitializing(false);
+      forceMenuUpdate(); // Trigger menu re-render
     };
 
     if (categories && isInitializing) {
       initPlayer();
     }
-  }, [categories, getLastWatchedChannel, saveCurrentChannel, isInitializing]);
+  }, [categories, getLastWatchedChannel, saveCurrentChannel, isInitializing, forceMenuUpdate]);
 
   // Handle channel change
   const handleChannelChange = useCallback((channel: LiveStream) => {
+    console.log('[DEBUG] handleChannelChange called:', channel.name);
     setCurrentChannel(channel);
     saveCurrentChannel(channel);
     resetError();
   }, [saveCurrentChannel, resetError]);
 
   // Get channels for the category shown in menu (not necessarily the current playing category)
-  const menuChannels = streamsMap.get(menuCategory) || [];
+  const menuChannels = streamsMapRef.current.get(menuCategoryRef.current) || [];
 
   // Keyboard navigation handlers
-  // KEY FIX: Menu open/close only updates menu state (menuCategory, streamsMap, isMenuOpen)
-  // Does NOT update currentChannel or currentCategory, so VideoPlayer doesn't remount
+  // KEY FIX: Menu open/close only updates refs, doesn't trigger VideoPlayer remount
   const handleToggleMenu = useCallback(() => {
-    setIsMenuOpen(prev => {
-      const newState = !prev;
-      if (newState) {
-        // When opening menu, sync menu category with current playing category
-        setMenuCategory(currentCategory);
-        // Ensure current category channels are loaded
-        if (currentCategory && !streamsMap.has(currentCategory)) {
-          xtreamApi.getStreams(currentCategory).then(channels => {
-            setStreamsMap(prev => new Map(prev).set(currentCategory, channels));
-          }).catch(console.error);
-        }
+    const newState = !isMenuOpenRef.current;
+    isMenuOpenRef.current = newState;
+    
+    if (newState) {
+      // When opening menu, sync menu category with current playing category
+      menuCategoryRef.current = currentCategory;
+      // Ensure current category channels are loaded
+      if (currentCategory && !streamsMapRef.current.has(currentCategory)) {
+        xtreamApi.getStreams(currentCategory).then(channels => {
+          streamsMapRef.current.set(currentCategory, channels);
+          forceMenuUpdate();
+        }).catch(console.error);
+      } else {
+        forceMenuUpdate();
       }
-      return newState;
-    });
-  }, [currentCategory, streamsMap]);
+    } else {
+      forceMenuUpdate();
+    }
+  }, [currentCategory]);
 
   const handleMoveNext = useCallback(() => {
     if (menuChannels.length === 0) return;
-    setSelectedChannelIndex(prev => (prev + 1) % menuChannels.length);
+    selectedChannelIndexRef.current = (selectedChannelIndexRef.current + 1) % menuChannels.length;
+    forceMenuUpdate();
   }, [menuChannels.length]);
 
   const handleMovePrevious = useCallback(() => {
     if (menuChannels.length === 0) return;
-    setSelectedChannelIndex(prev => (prev - 1 + menuChannels.length) % menuChannels.length);
+    selectedChannelIndexRef.current = (selectedChannelIndexRef.current - 1 + menuChannels.length) % menuChannels.length;
+    forceMenuUpdate();
   }, [menuChannels.length]);
 
-  // KEY FIX: Category navigation ONLY updates menu state, NOT playback state
+  // KEY FIX: Category navigation ONLY updates refs, NOT playback state
   // User can browse categories without changing the currently playing channel
   const handleMoveNextCategory = useCallback(async () => {
     if (!categories || categories.length === 0) return;
-    const currentIndex = categories.findIndex(c => c.category_id === menuCategory);
+    const currentIndex = categories.findIndex(c => c.category_id === menuCategoryRef.current);
     const nextIndex = (currentIndex + 1) % categories.length;
     const nextCategory = categories[nextIndex];
     const nextCategoryId = nextCategory.category_id;
     
     // Load channels for the new category if not already loaded
-    if (!streamsMap.has(nextCategoryId)) {
+    if (!streamsMapRef.current.has(nextCategoryId)) {
       try {
         const categoryStreams = await xtreamApi.getStreams(nextCategoryId);
-        setStreamsMap(prev => new Map(prev).set(nextCategoryId, categoryStreams));
+        streamsMapRef.current.set(nextCategoryId, categoryStreams);
       } catch (error) {
         console.error(`Failed to load streams for category ${nextCategoryId}:`, error);
       }
     }
     
-    setMenuCategory(nextCategoryId);
-    setSelectedChannelIndex(0);
+    menuCategoryRef.current = nextCategoryId;
+    selectedChannelIndexRef.current = 0;
     // CRITICAL: We do NOT change currentChannel or currentCategory here
     // Channel only changes on explicit selection (handleSelect)
-  }, [categories, menuCategory, streamsMap]);
+    forceMenuUpdate();
+  }, [categories]);
 
-  // KEY FIX: Same as handleMoveNextCategory - only updates menu state
+  // KEY FIX: Same as handleMoveNextCategory - only updates refs
   const handleMovePreviousCategory = useCallback(async () => {
     if (!categories || categories.length === 0) return;
-    const currentIndex = categories.findIndex(c => c.category_id === menuCategory);
+    const currentIndex = categories.findIndex(c => c.category_id === menuCategoryRef.current);
     const prevIndex = (currentIndex - 1 + categories.length) % categories.length;
     const prevCategory = categories[prevIndex];
     const prevCategoryId = prevCategory.category_id;
     
     // Load channels for the new category if not already loaded
-    if (!streamsMap.has(prevCategoryId)) {
+    if (!streamsMapRef.current.has(prevCategoryId)) {
       try {
         const categoryStreams = await xtreamApi.getStreams(prevCategoryId);
-        setStreamsMap(prev => new Map(prev).set(prevCategoryId, categoryStreams));
+        streamsMapRef.current.set(prevCategoryId, categoryStreams);
       } catch (error) {
         console.error(`Failed to load streams for category ${prevCategoryId}:`, error);
       }
     }
     
-    setMenuCategory(prevCategoryId);
-    setSelectedChannelIndex(0);
+    menuCategoryRef.current = prevCategoryId;
+    selectedChannelIndexRef.current = 0;
     // CRITICAL: We do NOT change currentChannel or currentCategory here
-  }, [categories, menuCategory, streamsMap]);
+    forceMenuUpdate();
+  }, [categories]);
 
   const handleSelect = useCallback(() => {
     if (menuChannels.length === 0) return;
-    const selectedChannel = menuChannels[selectedChannelIndex];
+    const selectedChannel = menuChannels[selectedChannelIndexRef.current];
     if (selectedChannel) {
       // Only now we change the current channel and category
+      console.log('[DEBUG] handleSelect: changing to', selectedChannel.name);
       setCurrentChannel(selectedChannel);
-      setCurrentCategory(menuCategory);
+      setCurrentCategory(menuCategoryRef.current);
       handleChannelChange(selectedChannel);
-      setIsMenuOpen(false);
+      isMenuOpenRef.current = false;
+      forceMenuUpdate();
     }
-  }, [menuChannels, selectedChannelIndex, menuCategory, handleChannelChange]);
+  }, [menuChannels, handleChannelChange]);
 
   const handleClose = useCallback(() => {
-    setIsMenuOpen(false);
+    isMenuOpenRef.current = false;
+    forceMenuUpdate();
   }, []);
 
   // Handle category selection from UI (click on category tab)
-  // KEY FIX: Category selection (click on category tab) only updates menu state
+  // KEY FIX: Category selection (click on category tab) only updates refs
   // User can browse different categories without changing the playing channel
   const handleCategorySelect = useCallback(async (categoryId: string) => {
     // Load channels for the selected category if not already loaded
-    if (!streamsMap.has(categoryId)) {
+    if (!streamsMapRef.current.has(categoryId)) {
       try {
         const categoryStreams = await xtreamApi.getStreams(categoryId);
-        setStreamsMap(prev => new Map(prev).set(categoryId, categoryStreams));
+        streamsMapRef.current.set(categoryId, categoryStreams);
       } catch (error) {
         console.error(`Failed to load streams for category ${categoryId}:`, error);
       }
     }
     
-    setMenuCategory(categoryId);
-    setSelectedChannelIndex(0);
+    menuCategoryRef.current = categoryId;
+    selectedChannelIndexRef.current = 0;
     // CRITICAL: We do NOT change currentChannel or currentCategory here
     // Channel only changes when user selects one with Enter key or click on channel
-  }, [streamsMap]);
+    forceMenuUpdate();
+  }, []);
 
   // Setup keyboard navigation
   useKeyboardNavigation({
-    onToggleMenu: handleToggleMenu,
-    onMoveNext: handleMoveNext,
-    onMovePrevious: handleMovePrevious,
-    onMoveNextCategory: handleMoveNextCategory,
-    onMovePreviousCategory: handleMovePreviousCategory,
-    onSelect: handleSelect,
-    onClose: handleClose,
-    isMenuOpen,
+    onToggleMenu: () => {
+      handleToggleMenu();
+    },
+    onMoveNext: () => {
+      handleMoveNext();
+    },
+    onMovePrevious: () => {
+      handleMovePrevious();
+    },
+    onMoveNextCategory: () => {
+      handleMoveNextCategory();
+    },
+    onMovePreviousCategory: () => {
+      handleMovePreviousCategory();
+    },
+    onSelect: () => {
+      handleSelect();
+    },
+    onClose: () => {
+      handleClose();
+    },
+    isMenuOpen: isMenuOpenRef.current,
   });
-
-  // Update selected index when menu category changes
-  useEffect(() => {
-    if (currentChannel && menuCategory) {
-      const channels = streamsMap.get(menuCategory) || [];
-      const index = channels.findIndex(c => c.stream_id === currentChannel.stream_id);
-      if (index >= 0) {
-        setSelectedChannelIndex(index);
-      } else {
-        setSelectedChannelIndex(0);
-      }
-    }
-  }, [menuCategory, currentChannel, streamsMap]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -286,6 +305,11 @@ export default function PlayerPage() {
       router.push('/login');
     }
   }, [isAuthenticated, isAuthLoading, router]);
+
+  // DEBUG: Monitor when currentChannel changes
+  useEffect(() => {
+    console.log('[DEBUG] currentChannel changed to:', currentChannel?.name || 'null');
+  }, [currentChannel]);
 
   if (isAuthLoading || isInitializing) {
     return (
@@ -328,7 +352,7 @@ export default function PlayerPage() {
   }
 
   const streamUrl = xtreamApi.getStreamUrl(currentChannel.stream_id);
-  const selectedChannel = menuChannels[selectedChannelIndex] || currentChannel;
+  const selectedChannel = menuChannels[selectedChannelIndexRef.current] || currentChannel;
 
   return (
     <div className="relative w-screen h-screen bg-black overflow-hidden">
@@ -370,22 +394,24 @@ export default function PlayerPage() {
       />
 
       {/* Menu Overlay */}
-      <MenuOverlay isOpen={isMenuOpen} onClose={handleClose}>
+      <MenuOverlay isOpen={isMenuOpenRef.current} onClose={handleClose}>
         {categories && (
           <>
             <CategoryList
               categories={categories}
-              activeCategoryId={menuCategory}
+              activeCategoryId={menuCategoryRef.current}
               onSelectCategory={handleCategorySelect}
             />
             <ChannelGrid
               channels={menuChannels}
               selectedChannelId={selectedChannel.stream_id}
               onSelectChannel={(channel) => {
+                console.log('[DEBUG] ChannelGrid onSelectChannel:', channel.name);
                 setCurrentChannel(channel);
-                setCurrentCategory(menuCategory);
+                setCurrentCategory(menuCategoryRef.current);
                 handleChannelChange(channel);
-                setIsMenuOpen(false);
+                isMenuOpenRef.current = false;
+                forceMenuUpdate();
               }}
             />
           </>
