@@ -3,7 +3,9 @@
 **Feature Branch**: `003-fix-channel-reload`  
 **Created**: 2026-05-09  
 **Status**: Draft  
-**Input**: User description: "al abrir y cerrar el menu hay un problema, se vuelve a cargar el canal, esto no deberia suceder. el canal se debe cargar cuando inicia el dashboard y cuando el usuario selecciona un canal desde el menu, tambien con las flechas arriba o abajo"
+**Input**: 
+1. User description: "al abrir y cerrar el menu hay un problema, se vuelve a cargar el canal, esto no deberia suceder. el canal se debe cargar cuando inicia el dashboard y cuando el usuario selecciona un canal desde el menu, tambien con las flechas arriba o abajo"
+2. **CLARIFIED**: User requirement: "quiero que el menu cascada se muestre solo categorias, si se selecciona una ahora si muestra + panel de canales mas el epg del canal. el panel de canales y epg es el mismo asi que el boton back de este panel debe de cerrarse y volver solo a categorias."
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -44,6 +46,26 @@ As a user, I want the channel to change ONLY when I explicitly select a channel 
 
 ---
 
+### User Story 3 - Two-Step Cascade Menu Flow (Priority: P0)
+
+As a user, I want the menu to initially show only categories, and only after selecting a category should I see the channels and EPG panels together, so I can browse more efficiently and focus on one level at a time.
+
+**Why this priority**: This provides a cleaner, less overwhelming interface. Users can first choose a category, then focus on channel selection with EPG information visible.
+
+**Independent Test**: Can be fully tested by:
+1. Open menu - verify only categories visible
+2. Select a category - verify channels + EPG appear
+3. Click back button - verify returns to categories-only view
+
+**Acceptance Scenarios**:
+
+1. **Given** the menu is closed, **When** user opens menu with 'M', **Then** only the Categories panel is visible (no channels or EPG)
+2. **Given** user is viewing categories, **When** they select a category (click or Enter), **Then** Channels + EPG panels appear together
+3. **Given** user is viewing Channels + EPG, **When** they click the back button, **Then** both panels close and only Categories panel remains visible
+4. **Given** user is viewing Channels + EPG, **When** they navigate with Left arrow from Channels panel, **Then** they return to Categories-only view
+
+---
+
 ### Edge Cases
 
 - What happens when the user navigates to a category that hasn't been loaded yet? The category should load in the background without affecting the current channel
@@ -66,6 +88,16 @@ As a user, I want the channel to change ONLY when I explicitly select a channel 
 - **FR-009**: Category navigation (left/right arrows) MUST load channels for the new category in background WITHOUT changing currentChannel
 - **FR-010**: Channel selection (Enter or click) MUST update currentChannel, currentCategory, and close the menu
 
+### Two-Step Cascade Menu Requirements (CLARIFIED)
+
+- **FR-011**: Menu MUST initially display ONLY the Categories panel when opened (Channels and EPG panels hidden)
+- **FR-012**: Menu MUST have a `viewMode` state with values 'categories' or 'channels' to control panel visibility
+- **FR-013**: Selecting a category (click or Enter) MUST switch viewMode to 'channels' and display both Channels + EPG panels
+- **FR-014**: Back button in Channels panel MUST return to 'categories' viewMode (hiding Channels + EPG)
+- **FR-015**: Opening menu MUST always reset viewMode to 'categories' for consistent UX
+- **FR-016**: Closing menu MUST reset viewMode to 'categories' for next open
+- **FR-017**: Keyboard navigation from Channels panel with Left arrow MUST return to Categories-only view
+
 ### Key Entities
 
 - **currentChannel**: The channel currently playing in the video player (state that affects playback)
@@ -73,6 +105,7 @@ As a user, I want the channel to change ONLY when I explicitly select a channel 
 - **menuCategory**: The category currently displayed in the menu UI (navigation state only, does NOT affect playback)
 - **menuChannels**: List of channels in menuCategory (display only, does NOT affect playback until selection)
 - **streamsMap**: Cache of loaded channels per category (prevents re-fetching on repeated navigation)
+- **viewMode**: The current view state of the cascade menu - 'categories' (only categories visible) or 'channels' (channels + EPG visible)
 
 ## Success Criteria *(mandatory)*
 
@@ -85,6 +118,13 @@ As a user, I want the channel to change ONLY when I explicitly select a channel 
 - **SC-005**: No visible video interruption or buffering when opening/closing menu
 - **SC-006**: Menu category navigation feels instant (<100ms) even when loading new category channels from API
 
+### Two-Step Cascade Menu Success Criteria (CLARIFIED)
+
+- **SC-007**: Menu opens showing ONLY Categories panel 100% of the time (Channels + EPG hidden)
+- **SC-008**: Category selection switches to Channels + EPG view within 100ms (excluding API load time)
+- **SC-009**: Back button returns to Categories-only view 100% of the time
+- **SC-010**: Menu always resets to Categories view when reopened after closing
+
 ## Assumptions
 
 - The VideoPlayer component uses HLS.js for streaming and maintains state via refs
@@ -96,3 +136,22 @@ As a user, I want the channel to change ONLY when I explicitly select a channel 
 - Users expect to browse the channel guide without interrupting their viewing experience
 - The menu is a modal overlay that appears on top of the video player
 
+
+## Clarifications
+
+### Session 2026-05-10
+
+- **Q**: What is the exact behavior expected for the cascade menu flow?  
+  **A**: Two-step flow: (1) Menu opens showing ONLY categories, (2) Selecting a category shows Channels + EPG together, (3) Back button returns to categories-only view
+
+- **Q**: How should the back button behave in the Channels panel?  
+  **A**: Back button should close Channels + EPG panels and return to categories-only view (not just move panel focus)
+
+- **Q**: Should menu remember the view mode (categories vs channels) when reopened?  
+  **A**: No, menu should always reset to categories-only view when opened
+
+- **Q**: What state is needed to implement this?  
+  **A**: Add `viewMode` state ('categories' | 'channels') to control panel visibility, separate from `activePanel` which controls focus
+
+- **Q**: Should keyboard navigation change?  
+  **A**: Left arrow from Channels panel returns to categories view; Right arrow from Categories advances to channels view

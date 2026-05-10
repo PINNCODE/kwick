@@ -19,3 +19,10 @@ export interface NavigationState {
 }
 
 export type PanelLevel = 0 | 1 | 2;
+
+/**
+ * Represents the current view mode of the cascade menu
+ * - 'categories': Only categories panel is visible
+ * - 'channels': Channels and EPG panels are visible
+ */
+export type ViewMode = 'categories' | 'channels';

@@ -4,7 +4,6 @@ interface EPGPanelProps {
   epg: any[];
   isActive: boolean;
   isLoading: boolean;
-  onBack: () => void;
 }
 
 // Helper function to decode Base64 with UTF-8 support
@@ -42,11 +41,27 @@ function decodeBase64(str: string): string {
   return trimmed;
 }
 
-export function EPGPanel({ epg, isActive, isLoading, onBack }: EPGPanelProps) {
-  const formatTime = (timestamp: number) => {
-    if (!timestamp || timestamp === 0) return '--:--';
-    const date = new Date(timestamp * 1000);
+export function EPGPanel({ epg, isActive, isLoading }: EPGPanelProps) {
+  const formatTime = (timestamp: number | string | undefined) => {
+    // Handle undefined/null
+    if (!timestamp) return '--:--';
+
+    // Convert to number if string
+    let ts = typeof timestamp === 'string' ? parseInt(timestamp, 10) : timestamp;
+
+    // Validate it's a valid number
+    if (isNaN(ts) || ts === 0) return '--:--';
+
+    // Check if timestamp is already in milliseconds (13 digits) or seconds (10 digits)
+    // Unix timestamps in seconds are typically 10 digits, milliseconds are 13
+    if (ts < 10000000000) {
+      // It's in seconds, convert to milliseconds
+      ts = ts * 1000;
+    }
+
+    const date = new Date(ts);
     if (isNaN(date.getTime())) return '--:--';
+
     return date.toLocaleTimeString('es-ES', {
       hour: '2-digit',
       minute: '2-digit'
@@ -58,13 +73,8 @@ export function EPGPanel({ epg, isActive, isLoading, onBack }: EPGPanelProps) {
       className={`flex flex-col h-full ${isActive ? 'bg-gray-800/30' : ''}`}
       style={{ flex: '0 0 40%' }}
     >
-      <div className="p-4 border-b border-gray-800 flex-shrink-0 flex items-center justify-between">
+      <div className="p-4 border-b border-gray-800 flex-shrink-0">
         <h3 className="text-lg font-semibold text-white">Guía de Programas</h3>
-        <button onClick={onBack} className="text-gray-400 hover:text-white">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
       </div>
       
       <div className="flex-1 overflow-y-auto p-2 space-y-1">

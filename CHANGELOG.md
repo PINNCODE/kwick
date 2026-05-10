@@ -5,6 +5,41 @@ Todos los cambios notables en Kwick serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/),
 y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-05-10
+
+### ✨ Agregado
+
+#### Menú en Cascada (004-cascading-menu-epg)
+- **Sistema de navegación por paneles** con distribución 25%/35%/40% del viewport
+- **Panel de Categorías** (25%) - Lista de categorías disponibles
+- **Panel de Canales** (35%) - Canales con logos y nombres
+- **Panel de Guía EPG** (40%) - Programación con horarios y descripciones
+- **Navegación por teclado completa**:
+  - `M` - Abrir/cerrar menú
+  - `←` `→` - Navegar entre paneles
+  - `↑` `↓` - Navegar dentro del panel
+  - `Enter` - Seleccionar item
+  - `Esc` - Cerrar menú
+- **Carga automática de EPG** al seleccionar un canal
+- **Decodificación Base64 con UTF-8** para caracteres españoles (áéíóúüñ)
+- **Cambio de canal instantáneo** al hacer clic en un canal
+- **Preservación de estado** del menú sin afectar la reproducción de video
+
+### 🔧 Técnico
+
+#### Nuevos Archivos
+- `app/types/menu.ts` - Tipos TypeScript para el menú
+- `app/hooks/useCascadingMenu.ts` - Hook de gestión de estado del menú
+- `app/components/menu/CategoriesPanel.tsx` - Componente de panel de categorías
+- `app/components/menu/ChannelsPanel.tsx` - Componente de panel de canales
+- `app/components/menu/EPGPanel.tsx` - Componente de panel EPG
+
+#### Modificaciones
+- `app/lib/xtream-api.ts` - Agregado método `getEPG()` para obtener guía de programas
+- `app/hooks/useKeyboardNavigation.ts` - Soporte para navegación entre paneles
+- `app/components/menu/MenuOverlay.tsx` - Layout para 3 paneles en cascada
+- `app/player/page.tsx` - Integración completa del menú en cascada
+
 ## [1.0.0] - 2026-05-09
 
 ### ✨ Agregado

@@ -217,8 +217,8 @@ export default function PlayerPage() {
       />
 
       {/* Cascading Menu */}
-      <MenuOverlay 
-        isOpen={menu.isOpen} 
+      <MenuOverlay
+        isOpen={menu.isOpen}
         onClose={menu.closeMenu}
         activePanel={menu.activePanel}
       >
@@ -230,20 +230,23 @@ export default function PlayerPage() {
               isActive={menu.activePanel === 0}
               onSelect={menu.selectCategory}
             />
-            <ChannelsPanel
-              channels={menu.channels}
-              selectedId={menu.selectedChannel}
-              isActive={menu.activePanel === 1}
-              isLoading={menu.isLoadingChannels}
-              onSelect={menu.selectChannel}
-              onBack={() => menu.setActivePanel(0)}
-            />
-            <EPGPanel
-              epg={menu.epg}
-              isActive={menu.activePanel === 2}
-              isLoading={menu.isLoadingEpg}
-              onBack={() => menu.setActivePanel(1)}
-            />
+            {menu.viewMode === 'channels' && (
+              <>
+                <ChannelsPanel
+                  channels={menu.channels}
+                  selectedId={menu.selectedChannel}
+                  isActive={menu.activePanel === 1}
+                  isLoading={menu.isLoadingChannels}
+                  onSelect={menu.selectChannel}
+                  onBack={menu.showCategoriesView}
+                />
+                <EPGPanel
+                  epg={menu.epg}
+                  isActive={menu.activePanel === 2}
+                  isLoading={menu.isLoadingEpg}
+                />
+              </>
+            )}
           </>
         )}
       </MenuOverlay>

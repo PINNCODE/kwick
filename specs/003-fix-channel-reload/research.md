@@ -1,250 +1,212 @@
-# Phase 0: Research Report - State Management for Channel Navigation
+# Research: Cascade Menu View Mode Feature
 
-**Feature**: Fix Channel Reload on Menu Open/Close  
-**Date**: 2026-05-09  
-**Status**: Complete
+**Date**: 2026-05-10  
+**Feature**: Fix Channel Reload on Menu Open/Close + Two-Step Menu Flow  
+**Researcher**: Planning Agent
 
 ---
 
-## Research Topics
+## Decisions Made
 
-### 1. React State Separation Patterns
+### 1. View Mode State Pattern
 
-**Research Question**: How to separate UI navigation state from playback state to prevent unnecessary re-renders?
+**Decision**: Implement a `viewMode` state with values `'categories' | 'channels'`
 
-**Findings**:
+**Rationale**:
+- Simple boolean-like state that's easy to understand and test
+- Clearly represents the two distinct UI states requested by user
+- Can be extended to more views in the future if needed
+- Integrates cleanly with existing `activePanel` state for sub-navigation
 
-#### Pattern 1: Independent State Pairs
+**Location**: Added to `useCascadingMenu` hook return value
 
+**Implementation**:
 ```typescript
-// Playback state (affects VideoPlayer)
-const [currentChannel, setCurrentChannel] = useState<LiveStream | null>(null);
-const [currentCategory, setCurrentCategory] = useState<string>('');
-
-// Navigation state (UI only)
-const [menuCategory, setMenuCategory] = useState<string>('');
-const [menuChannels, setMenuChannels] = useState<LiveStream[]>([]);
-const [selectedChannelIndex, setSelectedChannelIndex] = useState(0);
+type ViewMode = 'categories' | 'channels';
+const [viewMode, setViewMode] = useState<ViewMode>('categories');
 ```
 
-**Benefits**:
-- Clear separation of concerns
-- Easy to reason about what triggers re-renders
-- VideoPlayer only remounts when `currentChannel.stream_id` changes
+---
 
-**Implementation**: Use separate `useState` calls, never mix states in single object.
+### 2. Keyboard Navigation Behavior
+
+**Decision**: Keep existing keyboard navigation mostly unchanged
+
+**Current Behavior Analysis** (from `useKeyboardNavigation.ts`):
+- Arrow Up/Down: Navigate items within current panel
+- Arrow Left/Right: Move between panels (0→1→2)
+- Enter: Select current item
+- Escape: Close menu
+- M: Toggle menu
+
+**Proposed Behavior for New Flow**:
+
+**When in Categories View (`viewMode = 'categories'`)**:
+- Arrow Up/Down: Navigate categories
+- Arrow Right: Select category → switch to Channels view
+- Enter: Select category → switch to Channels view
+- Escape: Close menu
+
+**When in Channels View (`viewMode = 'channels'`)**:
+- Arrow Up/Down: Navigate channels
+- Arrow Left: Go back to Categories view
+- Arrow Right: Move focus to EPG panel
+- Enter: Select channel → change channel and close menu
+- Escape: Close menu
+
+**Rationale**:
+- Maintains intuitive spatial navigation
+- Right arrow from categories advances to next step
+- Left arrow from channels goes back (standard UX pattern)
+- Minimal changes needed to keyboard handler
 
 ---
 
-#### Pattern 2: Functional Updates to Prevent Cascades
+### 3. EPG Loading Strategy
 
-```typescript
-// ✅ GOOD: Functional update prevents stale closure
-setStreamsMap(prev => new Map(prev).set(categoryId, channels));
+**Decision**: Load EPG automatically for the selected/highlighted channel in Channels view
 
-// ❌ BAD: Direct state reference can cause issues
-setStreamsMap(new Map(streamsMap).set(categoryId, channels));
-```
+**Rationale**:
+- User wants to see EPG when viewing channels ("panel de canales mas el epg")
+- Current implementation already loads EPG on channel selection
+- Keep this behavior - it's what users expect in a TV guide
+- EPG loads for the currently highlighted channel, not just the playing channel
 
-**Benefits**:
-- Always works with latest state
-- Prevents race conditions in async operations
-- React batches functional updates efficiently
+**Implementation**:
+- Keep existing `selectChannel` logic that loads EPG
+- EPG panel shows "No hay información" if no channel selected yet
 
 ---
 
-#### Pattern 3: useCallback with Minimal Dependencies
+### 4. View Transition Animation
 
+**Decision**: Use CSS transitions/animations for panel appearance
+
+**Options Considered**:
+1. **Instant switch** - No animation, immediate render
+2. **Slide in/out** - Panels slide from right
+3. **Fade in/out** - Opacity transition
+4. **Scale** - Subtle zoom effect
+
+**Decision**: Start with simple instant switch or subtle fade
+
+**Rationale**:
+- User didn't specify animation requirements
+- Keep it simple first (Constitution V - Simplicity)
+- Can enhance later if needed
+- Avoids layout shift issues during transition
+- Instant is better for accessibility (reduced motion)
+
+**Implementation Note**: Use Tailwind classes like `transition-opacity duration-200` if animation desired
+
+---
+
+### 5. Back Button Behavior
+
+**Decision**: Back button in Channels+EPG view returns to Categories-only view
+
+**Current Behavior**:
+- ChannelsPanel back button: `setActivePanel(0)` - moves focus to categories panel
+- EPGPanel back button: `setActivePanel(1)` - moves focus to channels panel
+
+**New Behavior**:
+- ChannelsPanel back button: `showCategoriesView()` - hides channels+EPG, shows only categories
+- EPGPanel back button: `setActivePanel(1)` - still moves focus back to channels (within same view)
+
+**Rationale**:
+- User specifically requested: "el boton back de este panel debe de cerrarse y volver solo a categorias"
+- ChannelsPanel back is the primary "go back to categories" action
+- EPGPanel back moves within the channels+EPG view
+
+---
+
+### 6. Category Selection Trigger
+
+**Decision**: Category selection triggers view mode change AND loads channels
+
+**Flow**:
+1. User clicks/enters on category
+2. `selectCategory(categoryId)` called
+3. Channels load from API
+4. `viewMode` switches to 'channels'
+5. Channels+EPG panels appear
+6. First channel auto-selected (for EPG display)
+
+**Rationale**:
+- Matches user expectation: select category → see its content
+- Loading state shown during API call
+- First channel selected by default so EPG has content to show
+- User can immediately navigate channels with up/down
+
+---
+
+### 7. State Reset on Menu Close
+
+**Decision**: Reset to categories view when menu closes
+
+**Implementation**:
 ```typescript
-// ✅ GOOD: Only essential dependencies
-const handleToggleMenu = useCallback(() => {
-  setIsMenuOpen(prev => !prev);
+const closeMenu = useCallback(() => {
+  setIsOpen(false);
+  setActivePanel(0);
+  setViewMode('categories');  // Reset for next open
 }, []);
-
-// ❌ BAD: Unnecessary dependencies cause re-creation
-const handleToggleMenu = useCallback(() => {
-  setIsMenuOpen(prev => !prev);
-}, [menuCategory, currentChannel]); // These aren't used!
 ```
 
-**Benefits**:
-- Stable function references
-- Prevents unnecessary re-renders of child components
-- Easier to reason about when handlers change
+**Rationale**:
+- Fresh start every time menu opens
+- User always sees categories first
+- Avoids confusion about current state
+- Simpler mental model: Menu = Categories → Select → Channels
 
 ---
 
-### 2. useEffect Dependency Management
+## Alternatives Considered
 
-**Research Question**: How to structure useEffect dependencies to prevent cascading updates?
+### Alternative 1: Keep All 3 Panels Always Visible
 
-**Findings**:
+**Status**: Rejected
 
-#### Anti-Pattern: Circular Dependencies
-
-```typescript
-// ❌ BAD: This creates a cascade
-useEffect(() => {
-  if (menuCategory) {
-    // Load channels
-  }
-}, [menuCategory]);
-
-useEffect(() => {
-  if (menuChannels.length > 0) {
-    // Update selected index
-    setSelectedChannelIndex(0);
-  }
-}, [menuChannels]);
-
-useEffect(() => {
-  if (selectedChannelIndex !== -1) {
-    // This might trigger something else...
-  }
-}, [selectedChannelIndex]);
-```
-
-**Problem**: Each effect triggers the next, creating a cascade of updates.
+**Why**: User explicitly requested two-step flow. Current 3-panel view is overwhelming and doesn't match the TV guide pattern they want.
 
 ---
 
-#### Pattern: Isolated Effects with Clear Responsibilities
+### Alternative 2: Use React Router for View State
 
-```typescript
-// ✅ GOOD: Each effect has single responsibility
-useEffect(() => {
-  // Only loads channels, doesn't update other state
-  if (menuCategory && !streamsMap.has(menuCategory)) {
-    xtreamApi.getStreams(menuCategory).then(channels => {
-      setStreamsMap(prev => new Map(prev).set(menuCategory, channels));
-    });
-  }
-}, [menuCategory, streamsMap]);
+**Status**: Rejected
 
-useEffect(() => {
-  // Only syncs index when channel changes, not when menu changes
-  if (currentChannel && menuCategory) {
-    const channels = streamsMap.get(menuCategory) || [];
-    const index = channels.findIndex(c => c.stream_id === currentChannel.stream_id);
-    if (index >= 0) {
-      setSelectedChannelIndex(index);
-    }
-  }
-}, [currentChannel, menuCategory, streamsMap]); // Reads menuCategory but doesn't cause cascade
-```
-
-**Key Insight**: An effect can READ a state value without causing problems. The issue is when effect UPDATES trigger other effects.
+**Why**: Overkill for this feature. State is local to menu component, not URL-state worthy. Would complicate implementation unnecessarily.
 
 ---
 
-### 3. VideoPlayer Remount Prevention
+### Alternative 3: Separate Categories into Own Component/Page
 
-**Research Question**: What causes VideoPlayer to remount and how to prevent it?
+**Status**: Rejected
 
-**Findings**:
-
-#### Root Cause: Key Prop Changes
-
-```typescript
-// Current implementation
-<VideoPlayer
-  key={currentChannel.stream_id}  // ← This causes remount when key changes
-  channel={currentChannel}
-  streamUrl={streamUrl}
-/>
-```
-
-**React Behavior**: When `key` changes, React:
-1. Unmounts old component (destroys HLS instance)
-2. Mounts new component (creates new HLS instance)
-3. Video reloads from beginning
+**Why**: Would break existing architecture. Current MenuOverlay is designed as a single overlay. User wants cascade behavior within same menu.
 
 ---
 
-#### Solution: Keep Key Stable During Menu Operations
+## Open Questions (None)
 
-```typescript
-// Menu operations should NEVER change currentChannel
-const handleMoveNextCategory = useCallback(async () => {
-  // ✅ GOOD: Only updates menu state
-  setMenuCategory(nextCategoryId);
-  // ❌ BAD: Would cause VideoPlayer remount
-  // setCurrentChannel(newChannel);
-}, []);
+All unknowns from Phase 0 have been resolved:
 
-// Only explicit selection changes currentChannel
-const handleSelect = useCallback(() => {
-  // ✅ GOOD: This is when we WANT VideoPlayer to change
-  setCurrentChannel(selectedChannel);
-  setCurrentCategory(menuCategory);
-  setIsMenuOpen(false);
-}, [selectedChannel, menuCategory]);
-```
-
-**Verification**: Monitor `currentChannel` during menu operations. If it changes → BUG.
+1. ✅ Keyboard navigation: Right arrow to advance, Left to go back
+2. ✅ EPG loading: Auto-load for selected channel
+3. ✅ Animation: Start simple (instant or fade)
 
 ---
 
-### 4. State Batching and Update Order
+## Technical Constraints Verified
 
-**Research Question**: How does React batch state updates and what's the update order?
-
-**Findings**:
-
-#### React 18 Automatic Batching
-
-```typescript
-// React 18: Both updates are batched
-const handleClick = () => {
-  setMenuCategory(categoryId);
-  setStreamsMap(prev => new Map(prev).set(categoryId, channels));
-  // Both updates happen in same render pass
-};
-```
-
-**Benefits**:
-- Fewer re-renders
-- Better performance
-- More predictable state
+1. ✅ TypeScript strict mode: All new code will be typed
+2. ✅ No new dependencies: Using existing state management
+3. ✅ Spanish-first: UI labels already in Spanish
+4. ✅ Framework compatible: Next.js 16.2.6 patterns followed
+5. ✅ Test-first: Tests will be written per Constitution
 
 ---
 
-#### Update Order Matters
+## Next Steps
 
-```typescript
-// ✅ GOOD: Order is clear
-const handleCategorySelect = useCallback(async (categoryId: string) => {
-  // First: Load channels if needed
-  if (!streamsMap.has(categoryId)) {
-    const channels = await xtreamApi.getStreams(categoryId);
-    setStreamsMap(prev => new Map(prev).set(categoryId, channels));
-  }
-  
-  // Then: Update menu to show new category
-  setMenuCategory(categoryId);
-  setSelectedChannelIndex(0);
-  
-  // NEVER: Update currentChannel here (that's handleSelect's job)
-}, [streamsMap]);
-```
-
----
-
-## Decisions Summary
-
-| # | Decision | Chosen Approach |
-|---|----------|-----------------|
-| 1 | State Separation | Independent state pairs (currentChannel vs menuCategory) |
-| 2 | useEffect Cascades | Remove menu states from playback-related effects |
-| 3 | Category Navigation | Only update menuCategory, NEVER currentChannel |
-| 4 | Menu Open Sync | Sync menuCategory with currentCategory (UI-only) |
-| 5 | VideoPlayer Key | Keep stable during menu operations |
-
----
-
-## References
-
-- [React Docs: State as a Snapshot](https://react.dev/learn/state-as-a-snapshot)
-- [React Docs: Queueing a Series of State Updates](https://react.dev/learn/queueing-a-series-of-state-updates)
-- [React Docs: You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect)
-- [React 18 Working Group: Automatic Batching](https://github.com/reactwg/react-18/discussions/21)
+Proceed to Phase 1: Design data model and create contracts
