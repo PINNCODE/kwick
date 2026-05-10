@@ -7,29 +7,36 @@ interface EPGPanelProps {
   onBack: () => void;
 }
 
-// Helper function to decode Base64
+// Helper function to decode Base64 with UTF-8 support
 function decodeBase64(str: string): string {
   if (!str || typeof str !== 'string') return '';
   
-  // Trim whitespace
   const trimmed = str.trim();
   
   // If it has spaces or is too short, it's not Base64
   if (trimmed.includes(' ') || trimmed.length < 4) return trimmed;
   
   try {
-    // Try to decode as Base64
+    // Decode Base64 to bytes (Latin1)
     const decoded = atob(trimmed);
     
-    // Check if decoded result looks like text (not binary garbage)
-    // Allow Spanish characters: áéíóúüñÁÉÍÓÚÜÑ
-    const isValidText = /^[\x20-\x7E\u00C0-\u00FF\s]*$/.test(decoded);
-    
-    if (isValidText && decoded.length > 0) {
-      return decoded;
+    // Convert to bytes array
+    const bytes = new Uint8Array(decoded.length);
+    for (let i = 0; i < decoded.length; i++) {
+      bytes[i] = decoded.charCodeAt(i);
     }
+    
+    // Decode as UTF-8 for proper Spanish characters (áéíóúüñ)
+    const utf8String = new TextDecoder('utf-8').decode(bytes);
+    
+    // Check if result looks like readable text
+    if (utf8String.length > 0 && /[\u00C0-\u00FFa-zA-Z0-9\s]/.test(utf8String)) {
+      return utf8String;
+    }
+    
+    return decoded; // Fallback to Latin1
   } catch (e) {
-    // Not valid Base64, return original
+    // Not valid Base64
   }
   
   return trimmed;
