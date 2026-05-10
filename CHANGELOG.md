@@ -69,6 +69,9 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 - **Error de renderizado** en AuthRedirectBanner (setState en effect)
 - **TypeScript errors** en componentes nuevos
 - **Lint warnings** en componentes de landing
+- **CRITICAL: VideoPlayer recargaba canal constantemente** - Callbacks del padre (onError, onPlaying, etc.) cambiaban en cada render, causando que setupHls se recreara y destruyera la instancia de HLS.js. Solución: usar refs para callbacks, setupHls ahora solo depende de streamUrl y autoPlay
+- **Menú interrumpía reproducción** - Al abrir/cerrar menú o navegar categorías, el video se recargaba. Solución: separar estado de navegación (refs) del estado de reproducción (useState)
+- **Navegación de categorías cambiaba canal** - Flechas ←→ causaban cambio de canal. Solución: handlers actualizan solo refs de menú, currentChannel solo cambia con Enter/click
 
 ### 📊 Métricas
 
@@ -78,13 +81,30 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 - **9 componentes** React nuevos
 - **100% checklists** de requisitos aprobadas
 
-### 🔧 Técnico
+### 🔧 Fix Crítico de Reproducción (Post-Landing)
 
-- **Build time**: ~1.5s (Turbopack)
-- **TypeScript compilation**: ~1.1s
-- **Componentes**: Server Components donde es posible
-- **Imágenes**: Next.js Image con optimización automática
-- **Fuentes**: next/font con preload automático
+**Problema**: Al abrir/cerrar menú o navegar categorías, el video se recargaba constantemente.
+
+**Causa Raíz**: 
+- VideoPlayer usaba callbacks como dependencias de setupHls
+- Callbacks cambiaban en cada render del padre
+- useEffect destruía y recreaba instancia HLS.js constantemente
+
+**Solución**:
+- Callbacks almacenados en refs (onErrorRef, onPlayingRef, etc.)
+- setupHls ahora solo depende de [streamUrl, autoPlay, destroyHls]
+- Estado de menú separado: refs para navegación, useState para reproducción
+- VideoPlayer estable a menos que streamUrl cambie realmente
+
+**Archivos Modificados**:
+- `app/components/player/VideoPlayer.tsx` - Callbacks en refs
+- `app/player/page.tsx` - Estado de menú con refs, debug logging
+
+**Resultado**:
+- ✅ Menú abrir/cerrar NO interrumpe video
+- ✅ Navegación categorías NO interrumpe video
+- ✅ Video solo cambia con selección explícita (Enter/click)
+- ✅ HLS instance estable entre renders
 
 ---
 
