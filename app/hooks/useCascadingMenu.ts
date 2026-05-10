@@ -1,0 +1,118 @@
+'use client';
+
+import { useState, useCallback, useEffect } from 'react';
+import { Category, LiveStream } from '../types/xtream';
+import { xtreamApi } from '../lib/xtream-api';
+
+interface UseCascadingMenuProps {
+  categories: Category[];
+  currentCategory: string;
+  onChannelChange: (channel: LiveStream) => void;
+}
+
+export function useCascadingMenu({ categories, currentCategory, onChannelChange }: UseCascadingMenuProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [activePanel, setActivePanel] = useState(0);
+  
+  // Panel states
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(currentCategory);
+  const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
+  const [channels, setChannels] = useState<LiveStream[]>([]);
+  const [epg, setEpg] = useState<any[]>([]);
+  const [isLoadingChannels, setIsLoadingChannels] = useState(false);
+  const [isLoadingEpg, setIsLoadingEpg] = useState(false);
+
+  // Sync with props
+  useEffect(() => {
+    if (categories.length > 0 && !selectedCategory) {
+      setSelectedCategory(currentCategory || categories[0]?.category_id);
+    }
+  }, [categories, currentCategory]);
+
+  const openMenu = useCallback(() => {
+    setIsOpen(true);
+    setActivePanel(0);
+  }, []);
+
+  const closeMenu = useCallback(() => {
+    setIsOpen(false);
+    setActivePanel(0);
+  }, []);
+
+  const toggleMenu = useCallback(() => {
+    if (isOpen) {
+      closeMenu();
+    } else {
+      openMenu();
+    }
+  }, [isOpen, openMenu, closeMenu]);
+
+  const selectCategory = useCallback(async (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    setIsLoadingChannels(true);
+    setChannels([]);
+    setEpg([]);
+    
+    try {
+      const streams = await xtreamApi.getStreams(categoryId);
+      setChannels(streams);
+      if (streams.length > 0) {
+        setSelectedChannel(streams[0].stream_id);
+      }
+    } catch (error) {
+      console.error('Error loading channels:', error);
+    } finally {
+      setIsLoadingChannels(false);
+    }
+  }, []);
+
+  const selectChannel = useCallback(async (channel: LiveStream) => {
+    setSelectedChannel(channel.stream_id);
+    onChannelChange(channel);
+    
+    // Load EPG automatically
+    setIsLoadingEpg(true);
+    try {
+      const epgData = await xtreamApi.getEPG(channel.stream_id);
+      setEpg(epgData);
+    } catch (error) {
+      console.error('Error loading EPG:', error);
+      setEpg([]);
+    } finally {
+      setIsLoadingEpg(false);
+    }
+  }, [onChannelChange]);
+
+  const moveNextPanel = useCallback(() => {
+    setActivePanel(prev => Math.min(prev + 1, 2));
+  }, []);
+
+  const movePreviousPanel = useCallback(() => {
+    setActivePanel(prev => {
+      if (prev === 0) {
+        closeMenu();
+        return 0;
+      }
+      return prev - 1;
+    });
+  }, [closeMenu]);
+
+  return {
+    isOpen,
+    activePanel,
+    selectedCategory,
+    selectedChannel,
+    channels,
+    epg,
+    isLoadingChannels,
+    isLoadingEpg,
+    openMenu,
+    closeMenu,
+    toggleMenu,
+    selectCategory,
+    selectChannel,
+    moveNextPanel,
+    movePreviousPanel,
+    setActivePanel
+  };
+}

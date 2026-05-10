@@ -123,8 +123,34 @@ class XtreamAPIClient {
     return Array.isArray(data) ? data : [];
   }
 
-  getStreamUrl(streamId: string): string {
+  async getEPG(streamId: string): Promise<any[]> {
     this.ensureAuthenticated();
+    
+    try {
+      const url = new URL(`${this.host}/player_api.php`);
+      url.searchParams.append('username', this.username);
+      url.searchParams.append('password', this.password);
+      url.searchParams.append('action', 'get_short_epg');
+      url.searchParams.append('stream_id', streamId);
+      
+      const response = await fetch(url.toString());
+      
+      if (!response.ok) {
+        return [];
+      }
+      
+      const data = await response.json();
+      return data.epg_listings || [];
+    } catch (error) {
+      console.error('Error fetching EPG:', error);
+      return [];
+    }
+  }
+
+  getStreamUrl(streamId: string): string {
+    if (!this.host || !this.username || !this.password) {
+      return '';
+    }
     return `${this.host}/live/${this.username}/${this.password}/${streamId}.m3u8`;
   }
 
