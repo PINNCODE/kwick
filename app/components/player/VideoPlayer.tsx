@@ -28,6 +28,29 @@ export function VideoPlayer({
   const hlsRef = useRef<Hls | null>(null);
   const retryCountRef = useRef(0);
   const maxRetries = 3;
+  
+  // Store callbacks in refs to prevent re-creation of setupHls
+  const onErrorRef = useRef(onError);
+  const onPlayingRef = useRef(onPlaying);
+  const onBufferingRef = useRef(onBuffering);
+  const onRetryRef = useRef(onRetry);
+  
+  // Update refs when callbacks change (doesn't trigger re-renders)
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
+  
+  useEffect(() => {
+    onPlayingRef.current = onPlaying;
+  }, [onPlaying]);
+  
+  useEffect(() => {
+    onBufferingRef.current = onBuffering;
+  }, [onBuffering]);
+  
+  useEffect(() => {
+    onRetryRef.current = onRetry;
+  }, [onRetry]);
 
   const destroyHls = useCallback(() => {
     if (hlsRef.current) {
@@ -55,14 +78,14 @@ export function VideoPlayer({
 
       hlsRef.current = hls;
 
-      // Error handling with retry logic
+      // Error handling with retry logic - use refs to prevent re-creation
       hls.on(Hls.Events.ERROR, (event, data) => {
         if (data.fatal) {
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
               if (retryCountRef.current < maxRetries) {
                 retryCountRef.current++;
-                onRetry?.(retryCountRef.current);
+                onRetryRef.current?.(retryCountRef.current);
                 
                 // Exponential backoff: 1s, 2s, 4s
                 const delay = Math.pow(2, retryCountRef.current - 1) * 1000;
@@ -70,7 +93,7 @@ export function VideoPlayer({
                   hls.startLoad();
                 }, delay);
               } else {
-                onError?.({
+                onErrorRef.current?.({
                   code: 'NETWORK_ERROR',
                   message: 'Error de red después de múltiples intentos',
                   type: 'network',
@@ -81,10 +104,10 @@ export function VideoPlayer({
             case Hls.ErrorTypes.MEDIA_ERROR:
               if (retryCountRef.current < maxRetries) {
                 retryCountRef.current++;
-                onRetry?.(retryCountRef.current);
+                onRetryRef.current?.(retryCountRef.current);
                 hls.recoverMediaError();
               } else {
-                onError?.({
+                onErrorRef.current?.({
                   code: 'MEDIA_ERROR',
                   message: 'Error de media después de múltiples intentos',
                   type: 'media',
@@ -93,7 +116,7 @@ export function VideoPlayer({
               }
               break;
             default:
-              onError?.({
+              onErrorRef.current?.({
                 code: 'UNKNOWN_ERROR',
                 message: 'Error desconocido',
                 type: 'other',
@@ -116,7 +139,7 @@ export function VideoPlayer({
       // Handle buffer events
       hls.on(Hls.Events.ERROR, (event, data) => {
         if (data.details === Hls.ErrorDetails.BUFFER_STALLED_ERROR) {
-          onBuffering?.();
+          onBufferingRef.current?.();
         }
       });
 
@@ -131,7 +154,7 @@ export function VideoPlayer({
         });
       }
     }
-  }, [streamUrl, autoPlay, onError, onPlaying, onBuffering, onRetry, destroyHls]);
+  }, [streamUrl, autoPlay, destroyHls]); // Removed callback dependencies
 
   useEffect(() => {
     setupHls();
@@ -139,7 +162,7 @@ export function VideoPlayer({
     return () => {
       destroyHls();
     };
-  }, [setupHls, destroyHls]);
+  }, [setupHls, destroyHls]); // setupHls now only depends on streamUrl and autoPlay
 
   // Handle visibility change (pause when tab hidden)
   useEffect(() => {

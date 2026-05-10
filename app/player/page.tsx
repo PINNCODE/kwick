@@ -62,6 +62,7 @@ export default function PlayerPage() {
   // Initialize player - only load channels for the selected category
   useEffect(() => {
     const initPlayer = async () => {
+      console.log('[DEBUG] initPlayer: Starting initialization');
       if (!categories || categories.length === 0) return;
 
       const credentials = getCredentials();
@@ -83,12 +84,14 @@ export default function PlayerPage() {
         const categoryExists = categories.some(c => c.category_id === lastChannel.categoryId);
         if (categoryExists) {
           targetCategoryId = lastChannel.categoryId;
+          console.log('[DEBUG] initPlayer: Using last channel category:', targetCategoryId);
         }
       }
       
       // If no valid last category, use the first one
       if (!targetCategoryId) {
         targetCategoryId = categories[0].category_id;
+        console.log('[DEBUG] initPlayer: Using first category:', targetCategoryId);
       }
 
       // Load streams ONLY for the target category
@@ -96,6 +99,7 @@ export default function PlayerPage() {
       try {
         const categoryStreams = await xtreamApi.getStreams(targetCategoryId);
         streams.set(targetCategoryId, categoryStreams);
+        console.log('[DEBUG] initPlayer: Loaded', categoryStreams.length, 'channels for category', targetCategoryId);
       } catch (error) {
         console.error(`Failed to load streams for category ${targetCategoryId}:`, error);
       }
@@ -108,15 +112,22 @@ export default function PlayerPage() {
         // Try to find the last watched channel in the loaded category
         const categoryStreams = streams.get(targetCategoryId) || [];
         channelToPlay = categoryStreams.find(c => c.stream_id === lastChannel.streamId) || null;
+        if (channelToPlay) {
+          console.log('[DEBUG] initPlayer: Found last watched channel:', channelToPlay.name);
+        }
       }
       
       // If no last channel or not found, use the first channel of the category
       if (!channelToPlay) {
         const categoryStreams = streams.get(targetCategoryId) || [];
         channelToPlay = categoryStreams[0] || null;
+        if (channelToPlay) {
+          console.log('[DEBUG] initPlayer: Using first channel:', channelToPlay.name);
+        }
       }
       
       if (channelToPlay) {
+        console.log('[DEBUG] initPlayer: About to setCurrentChannel:', channelToPlay.name);
         setCurrentChannel(channelToPlay);
         setCurrentCategory(targetCategoryId);
         menuCategoryRef.current = targetCategoryId; // Sync menu with current category
@@ -126,9 +137,11 @@ export default function PlayerPage() {
         const categoryStreams = streams.get(targetCategoryId) || [];
         const index = categoryStreams.findIndex(c => c.stream_id === channelToPlay!.stream_id);
         selectedChannelIndexRef.current = index >= 0 ? index : 0;
+        console.log('[DEBUG] initPlayer: Channel set, selected index:', selectedChannelIndexRef.current);
       }
 
       setIsInitializing(false);
+      console.log('[DEBUG] initPlayer: Initialization complete, forcing menu update');
       forceMenuUpdate(); // Trigger menu re-render
     };
 
@@ -310,6 +323,11 @@ export default function PlayerPage() {
   useEffect(() => {
     console.log('[DEBUG] currentChannel changed to:', currentChannel?.name || 'null');
   }, [currentChannel]);
+
+  // DEBUG: Monitor when menu category changes
+  useEffect(() => {
+    console.log('[DEBUG] menuCategoryRef changed to:', menuCategoryRef.current);
+  }, [menuCategoryRef.current]);
 
   if (isAuthLoading || isInitializing) {
     return (
