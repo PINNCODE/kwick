@@ -13,20 +13,30 @@ interface ChannelsPanelProps {
 
 // Helper function to decode Base64
 function decodeBase64(str: string): string {
-  if (!str) return '';
+  if (!str || typeof str !== 'string') return '';
+  
+  // Trim whitespace
+  const trimmed = str.trim();
+  
+  // If it has spaces or is too short, it's not Base64
+  if (trimmed.includes(' ') || trimmed.length < 4) return trimmed;
+  
   try {
-    // Check if string looks like Base64 (alphanumeric with +/=, no spaces, reasonable length)
-    if (/^[A-Za-z0-9+/=]+$/.test(str) && str.length > 10 && str.length % 4 === 0) {
-      const decoded = atob(str);
-      // Verify it's valid UTF-8 text
-      if (/^[\x20-\x7E\s]*$/.test(decoded)) {
-        return decoded;
-      }
+    // Try to decode as Base64
+    const decoded = atob(trimmed);
+    
+    // Check if decoded result looks like text (not binary garbage)
+    // Allow Spanish characters: áéíóúüñÁÉÍÓÚÜÑ
+    const isValidText = /^[\x20-\x7E\u00C0-\u00FF\s]*$/.test(decoded);
+    
+    if (isValidText && decoded.length > 0) {
+      return decoded;
     }
   } catch (e) {
     // Not valid Base64, return original
   }
-  return str;
+  
+  return trimmed;
 }
 
 export function ChannelsPanel({ channels, selectedId, isActive, isLoading, onSelect, onBack }: ChannelsPanelProps) {
