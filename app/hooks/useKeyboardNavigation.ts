@@ -6,8 +6,8 @@ interface UseKeyboardNavigationProps {
   onToggleMenu: () => void;
   onMoveNext: () => void;
   onMovePrevious: () => void;
-  onMoveNextCategory: () => void;
-  onMovePreviousCategory: () => void;
+  onMoveNextPanel: () => void;
+  onMovePreviousPanel: () => void;
   onSelect: () => void;
   onClose: () => void;
   isMenuOpen: boolean;
@@ -17,8 +17,8 @@ export function useKeyboardNavigation({
   onToggleMenu,
   onMoveNext,
   onMovePrevious,
-  onMoveNextCategory,
-  onMovePreviousCategory,
+  onMoveNextPanel,
+  onMovePreviousPanel,
   onSelect,
   onClose,
   isMenuOpen,
@@ -34,9 +34,14 @@ export function useKeyboardNavigation({
       switch (event.key) {
         case 'm':
         case 'M':
-        case 'Escape':
           event.preventDefault();
           onToggleMenu();
+          setLastKeyTime(now);
+          break;
+
+        case 'Escape':
+          event.preventDefault();
+          onClose();
           setLastKeyTime(now);
           break;
 
@@ -59,7 +64,7 @@ export function useKeyboardNavigation({
         case 'ArrowLeft':
           if (isMenuOpen) {
             event.preventDefault();
-            onMovePreviousCategory();
+            onMovePreviousPanel();
             setLastKeyTime(now);
           }
           break;
@@ -67,7 +72,7 @@ export function useKeyboardNavigation({
         case 'ArrowRight':
           if (isMenuOpen) {
             event.preventDefault();
-            onMoveNextCategory();
+            onMoveNextPanel();
             setLastKeyTime(now);
           }
           break;
@@ -85,9 +90,10 @@ export function useKeyboardNavigation({
       onToggleMenu,
       onMoveNext,
       onMovePrevious,
-      onMoveNextCategory,
-      onMovePreviousCategory,
+      onMoveNextPanel,
+      onMovePreviousPanel,
       onSelect,
+      onClose,
       isMenuOpen,
       lastKeyTime,
       keyDelay,
