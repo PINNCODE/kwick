@@ -26,6 +26,10 @@ export function useCascadingMenu({ categories, currentCategory, onChannelChange 
   // View mode state for two-step cascade menu
   const [viewMode, setViewMode] = useState<ViewMode>('categories');
 
+  // Keyboard focus state — tracks which item index is focused in each panel
+  const [focusedCategoryIndex, setFocusedCategoryIndex] = useState(0);
+  const [focusedChannelIndex, setFocusedChannelIndex] = useState(0);
+
   // Sync with props
   useEffect(() => {
     if (categories.length > 0 && !selectedCategory) {
@@ -37,12 +41,16 @@ export function useCascadingMenu({ categories, currentCategory, onChannelChange 
     setIsOpen(true);
     setActivePanel(0);
     setViewMode('categories'); // Reset to categories view for fresh start
+    setFocusedCategoryIndex(0);
+    setFocusedChannelIndex(0);
   }, []);
 
   const closeMenu = useCallback(() => {
     setIsOpen(false);
     setActivePanel(0);
     setViewMode('categories'); // Reset for next open
+    setFocusedCategoryIndex(0);
+    setFocusedChannelIndex(0);
   }, []);
 
   const showChannelsView = useCallback(() => {
@@ -53,7 +61,14 @@ export function useCascadingMenu({ categories, currentCategory, onChannelChange 
   const showCategoriesView = useCallback(() => {
     setViewMode('categories');
     setActivePanel(0);
-  }, []);
+    // Restore focus to the previously selected category
+    if (selectedCategory) {
+      const index = categories.findIndex(c => c.category_id === selectedCategory);
+      if (index >= 0) {
+        setFocusedCategoryIndex(index);
+      }
+    }
+  }, [selectedCategory, categories]);
 
   const toggleMenu = useCallback(() => {
     if (isOpen) {
@@ -65,6 +80,7 @@ export function useCascadingMenu({ categories, currentCategory, onChannelChange 
 
   const selectCategory = useCallback(async (categoryId: string) => {
     setSelectedCategory(categoryId);
+    setFocusedChannelIndex(0); // Reset channel focus when category changes
     setIsLoadingChannels(true);
     setChannels([]);
     setEpg([]);
@@ -112,9 +128,48 @@ export function useCascadingMenu({ categories, currentCategory, onChannelChange 
     }
   }, [onChannelChange]);
 
+  const moveNextItem = useCallback(() => {
+    if (viewMode === 'categories') {
+      setFocusedCategoryIndex(prev => Math.min(prev + 1, categories.length - 1));
+    } else {
+      setFocusedChannelIndex(prev => Math.min(prev + 1, channels.length - 1));
+    }
+  }, [viewMode, categories.length, channels.length]);
+
+  const movePreviousItem = useCallback(() => {
+    if (viewMode === 'categories') {
+      setFocusedCategoryIndex(prev => Math.max(prev - 1, 0));
+    } else {
+      setFocusedChannelIndex(prev => Math.max(prev - 1, 0));
+    }
+  }, [viewMode]);
+
+  const selectFocusedItem = useCallback(() => {
+    if (viewMode === 'categories') {
+      const category = categories[focusedCategoryIndex];
+      if (category) {
+        selectCategory(category.category_id);
+      }
+    } else {
+      const channel = channels[focusedChannelIndex];
+      if (channel) {
+        selectChannel(channel);
+        closeMenu();
+      }
+    }
+  }, [viewMode, categories, channels, focusedCategoryIndex, focusedChannelIndex, selectCategory, selectChannel, closeMenu]);
+
   const moveNextPanel = useCallback(() => {
-    setActivePanel(prev => Math.min(prev + 1, 2));
-  }, []);
+    // When in categories view, Right arrow opens the focused category
+    if (viewMode === 'categories') {
+      const category = categories[focusedCategoryIndex];
+      if (category) {
+        selectCategory(category.category_id);
+      }
+    } else {
+      // In channels view, Right arrow is a no-op
+    }
+  }, [viewMode, categories, focusedCategoryIndex, selectCategory]);
 
   const movePreviousPanel = useCallback(() => {
     setActivePanel(prev => {
@@ -122,9 +177,11 @@ export function useCascadingMenu({ categories, currentCategory, onChannelChange 
         closeMenu();
         return 0;
       }
-      return prev - 1;
+      // When returning from channels to categories, restore focus
+      showCategoriesView();
+      return 0;
     });
-  }, [closeMenu]);
+  }, [closeMenu, showCategoriesView]);
 
   return {
     isOpen,
@@ -136,11 +193,16 @@ export function useCascadingMenu({ categories, currentCategory, onChannelChange 
     isLoadingChannels,
     isLoadingEpg,
     viewMode,
+    focusedCategoryIndex,
+    focusedChannelIndex,
     openMenu,
     closeMenu,
     toggleMenu,
     selectCategory,
     selectChannel,
+    selectFocusedItem,
+    moveNextItem,
+    movePreviousItem,
     moveNextPanel,
     movePreviousPanel,
     setActivePanel,
