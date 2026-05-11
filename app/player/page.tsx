@@ -50,7 +50,7 @@ export default function PlayerPage() {
   // Initialize player
   useEffect(() => {
     const initPlayer = async () => {
-      if (!categories || categories.length === 0) return;
+      if (!categories || !Array.isArray(categories) || categories.length === 0) return;
 
       const credentials = getCredentials();
       if (!credentials) return;
