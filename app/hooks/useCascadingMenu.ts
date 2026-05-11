@@ -14,8 +14,7 @@ interface UseCascadingMenuProps {
 export function useCascadingMenu({ categories, currentCategory, onChannelChange }: UseCascadingMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activePanel, setActivePanel] = useState(0);
-  const [selectedIndex, setSelectedIndex] = useState(0);
-
+  
   // Panel states
   const [selectedCategory, setSelectedCategory] = useState<string | null>(currentCategory);
   const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
@@ -37,8 +36,7 @@ export function useCascadingMenu({ categories, currentCategory, onChannelChange 
   const openMenu = useCallback(() => {
     setIsOpen(true);
     setActivePanel(0);
-    setViewMode('categories');
-    setSelectedIndex(0); // Reset index for fresh start
+    setViewMode('categories'); // Reset to categories view for fresh start
   }, []);
 
   const closeMenu = useCallback(() => {
@@ -50,13 +48,11 @@ export function useCascadingMenu({ categories, currentCategory, onChannelChange 
   const showChannelsView = useCallback(() => {
     setViewMode('channels');
     setActivePanel(1);
-    setSelectedIndex(0);
   }, []);
 
   const showCategoriesView = useCallback(() => {
     setViewMode('categories');
     setActivePanel(0);
-    setSelectedIndex(0);
   }, []);
 
   const toggleMenu = useCallback(() => {
@@ -130,26 +126,6 @@ export function useCascadingMenu({ categories, currentCategory, onChannelChange 
     });
   }, [closeMenu]);
 
-  const moveNextItem = useCallback(() => {
-    if (viewMode === 'categories') {
-      setSelectedIndex(prev => Math.min(prev + 1, categories.length - 1));
-    } else if (viewMode === 'channels') {
-      setSelectedIndex(prev => Math.min(prev + 1, channels.length - 1));
-    }
-  }, [viewMode, categories.length, channels.length]);
-
-  const movePreviousItem = useCallback(() => {
-    setSelectedIndex(prev => Math.max(prev - 1, 0));
-  }, []);
-
-  const selectCurrentItem = useCallback(() => {
-    if (viewMode === 'categories' && categories[selectedIndex]) {
-      selectCategory(categories[selectedIndex].category_id);
-    } else if (viewMode === 'channels' && channels[selectedIndex]) {
-      selectChannel(channels[selectedIndex]);
-    }
-  }, [viewMode, categories, channels, selectedIndex, selectCategory, selectChannel]);
-
   return {
     isOpen,
     activePanel,
@@ -160,7 +136,6 @@ export function useCascadingMenu({ categories, currentCategory, onChannelChange 
     isLoadingChannels,
     isLoadingEpg,
     viewMode,
-    selectedIndex,
     openMenu,
     closeMenu,
     toggleMenu,
@@ -168,9 +143,6 @@ export function useCascadingMenu({ categories, currentCategory, onChannelChange 
     selectChannel,
     moveNextPanel,
     movePreviousPanel,
-    moveNextItem,
-    movePreviousItem,
-    selectCurrentItem,
     setActivePanel,
     showChannelsView,
     showCategoriesView

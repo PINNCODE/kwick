@@ -5,7 +5,6 @@ import { LiveStream } from '../../types/xtream';
 interface ChannelsPanelProps {
   channels: LiveStream[];
   selectedId: string | null;
-  selectedIndex: number;
   isActive: boolean;
   isLoading: boolean;
   onSelect: (channel: LiveStream) => void;
@@ -47,7 +46,7 @@ function decodeBase64(str: string): string {
   return trimmed;
 }
 
-export function ChannelsPanel({ channels, selectedId, selectedIndex, isActive, isLoading, onSelect, onBack }: ChannelsPanelProps) {
+export function ChannelsPanel({ channels, selectedId, isActive, isLoading, onSelect, onBack }: ChannelsPanelProps) {
   return (
     <div 
       className={`flex flex-col h-full border-r border-gray-800 ${isActive ? 'bg-gray-800/30' : ''}`}
@@ -75,7 +74,7 @@ export function ChannelsPanel({ channels, selectedId, selectedIndex, isActive, i
               key={channel.stream_id}
               onClick={() => onSelect(channel)}
               className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all ${
-                selectedIndex === index
+                selectedId === channel.stream_id
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
               }`}
