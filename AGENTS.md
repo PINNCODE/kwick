@@ -7,5 +7,5 @@ This version has breaking changes — APIs, conventions, and file structure may 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/007-enter-key-tests/plan.md`
+`specs/008-keyboard-nav-tests/plan.md`
 <!-- SPECKIT END -->

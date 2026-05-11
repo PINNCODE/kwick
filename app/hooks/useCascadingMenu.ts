@@ -66,7 +66,13 @@ export function useCascadingMenu({ categories, currentCategory, onChannelChange 
       const index = categories.findIndex(c => c.category_id === selectedCategory);
       if (index >= 0) {
         setFocusedCategoryIndex(index);
+      } else {
+        // Category not found in list — default to 0
+        setFocusedCategoryIndex(0);
       }
+    } else {
+      // No selected category — default to 0
+      setFocusedCategoryIndex(0);
     }
   }, [selectedCategory, categories]);
 
