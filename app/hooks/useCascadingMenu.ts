@@ -149,6 +149,8 @@ export function useCascadingMenu({ categories, currentCategory, onChannelChange 
   }, [viewMode]);
 
   const selectFocusedItem = useCallback(() => {
+    if (isLoadingChannels) return;
+
     if (viewMode === 'categories') {
       const category = categories[focusedCategoryIndex];
       if (category) {
@@ -161,7 +163,7 @@ export function useCascadingMenu({ categories, currentCategory, onChannelChange 
         closeMenu();
       }
     }
-  }, [viewMode, categories, channels, focusedCategoryIndex, focusedChannelIndex, selectCategory, selectChannel, closeMenu]);
+  }, [viewMode, categories, channels, focusedCategoryIndex, focusedChannelIndex, selectCategory, selectChannel, closeMenu, isLoadingChannels]);
 
   const moveNextPanel = useCallback(() => {
     // When in categories view, Right arrow opens the focused category

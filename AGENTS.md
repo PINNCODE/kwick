@@ -7,5 +7,5 @@ This version has breaking changes — APIs, conventions, and file structure may 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/006-focus-state-cascading-menu/plan.md`
+`specs/007-enter-key-tests/plan.md`
 <!-- SPECKIT END -->
