@@ -31,7 +31,7 @@ export function MenuOverlay({ isOpen, onClose, activePanel, children }: MenuOver
       
       <div className="absolute bottom-4 left-4 text-xs text-gray-500 z-20">
         <p>Panel {activePanel + 1} de 3</p>
-        <p>←→ para navegar, ↑↓ para items, Enter para seleccionar</p>
+        <p>←→ para navegar paneles, ↑↓ para items, Enter para seleccionar</p>
       </div>
     </div>
   );
