@@ -121,11 +121,11 @@ export default function PlayerPage() {
   // Keyboard Navigation
   useKeyboardNavigation({
     onToggleMenu: menu.toggleMenu,
-    onMoveNext: () => {},
-    onMovePrevious: () => {},
+    onMoveNext: menu.moveNextItem,
+    onMovePrevious: menu.movePreviousItem,
     onMoveNextPanel: menu.moveNextPanel,
     onMovePreviousPanel: menu.movePreviousPanel,
-    onSelect: () => {},
+    onSelect: menu.selectCurrentItem,
     onClose: menu.closeMenu,
     isMenuOpen: menu.isOpen
   });
@@ -227,6 +227,7 @@ export default function PlayerPage() {
             <CategoriesPanel
               categories={categories}
               selectedId={menu.selectedCategory}
+              selectedIndex={menu.viewMode === 'categories' ? menu.selectedIndex : 0}
               isActive={menu.activePanel === 0}
               onSelect={menu.selectCategory}
             />
@@ -235,6 +236,7 @@ export default function PlayerPage() {
                 <ChannelsPanel
                   channels={menu.channels}
                   selectedId={menu.selectedChannel}
+                  selectedIndex={menu.viewMode === 'channels' ? menu.selectedIndex : 0}
                   isActive={menu.activePanel === 1}
                   isLoading={menu.isLoadingChannels}
                   onSelect={menu.selectChannel}
