@@ -1107,4 +1107,263 @@ describe('useCascadingMenu', () => {
       }).not.toThrow();
     });
   });
+
+  describe('focus state - movePreviousPanel (US1)', () => {
+    it('T044: movePreviousPanel on panel 0 (categories view) closes the menu', () => {
+      const { result } = renderHook(() =>
+        useCascadingMenu({
+          categories: mockCategories,
+          currentCategory: '1',
+          onChannelChange: mockOnChannelChange,
+        })
+      );
+
+      act(() => {
+        result.current.openMenu();
+      });
+
+      expect(result.current.isOpen).toBe(true);
+      expect(result.current.activePanel).toBe(0);
+
+      act(() => {
+        result.current.movePreviousPanel();
+      });
+
+      expect(result.current.isOpen).toBe(false);
+    });
+
+    it('T045: movePreviousPanel on panel 1 (channels view) returns to categories view', async () => {
+      xtreamApi.getStreams.mockResolvedValue(mockChannels);
+      xtreamApi.getEPG.mockResolvedValue([]);
+
+      const { result } = renderHook(() =>
+        useCascadingMenu({
+          categories: mockCategories,
+          currentCategory: '1',
+          onChannelChange: mockOnChannelChange,
+        })
+      );
+
+      // Open menu and navigate to channels (panel 1)
+      act(() => {
+        result.current.openMenu();
+      });
+
+      await act(async () => {
+        await result.current.selectCategory('1');
+      });
+
+      expect(result.current.activePanel).toBe(1);
+      expect(result.current.viewMode).toBe('channels');
+
+      // Move back to categories
+      act(() => {
+        result.current.movePreviousPanel();
+      });
+
+      expect(result.current.activePanel).toBe(0);
+      expect(result.current.viewMode).toBe('categories');
+    });
+  });
+
+  describe('focus state - focus restoration (US2)', () => {
+    const multipleChannels: LiveStream[] = [
+      { ...mockChannels[0], stream_id: '101', name: 'Channel 1' },
+      { ...mockChannels[0], stream_id: '102', name: 'Channel 2' },
+    ];
+
+    it('T046: movePreviousPanel restores focusedCategoryIndex to previously selected category', async () => {
+      xtreamApi.getStreams.mockResolvedValue(multipleChannels);
+      xtreamApi.getEPG.mockResolvedValue([]);
+
+      const { result } = renderHook(() =>
+        useCascadingMenu({
+          categories: mockCategories,
+          currentCategory: '1',
+          onChannelChange: mockOnChannelChange,
+        })
+      );
+
+      // Open menu and move to category index 1
+      act(() => {
+        result.current.openMenu();
+        result.current.moveNextItem();
+      });
+
+      expect(result.current.focusedCategoryIndex).toBe(1);
+
+      // Select category to reach channels view
+      await act(async () => {
+        await result.current.selectCategory('2');
+      });
+
+      expect(result.current.viewMode).toBe('channels');
+
+      // Move back to categories
+      act(() => {
+        result.current.movePreviousPanel();
+      });
+
+      // Focus should be restored to index 1
+      expect(result.current.activePanel).toBe(0);
+      expect(result.current.viewMode).toBe('categories');
+      expect(result.current.focusedCategoryIndex).toBe(1);
+    });
+
+    it('T047: showCategoriesView sets focusedCategoryIndex to 0 when selectedCategory is not found', () => {
+      // Create a hook instance with no matching selectedCategory
+      const { result } = renderHook(() =>
+        useCascadingMenu({
+          categories: mockCategories,
+          currentCategory: '', // Empty = no match
+          onChannelChange: mockOnChannelChange,
+        })
+      );
+
+      act(() => {
+        result.current.openMenu();
+        result.current.moveNextItem();
+      });
+
+      expect(result.current.focusedCategoryIndex).toBe(1);
+
+      // showCategoriesView checks if selectedCategory exists before restoring
+      // When selectedCategory is empty/null, the if (selectedCategory) guard fails
+      // and focus is NOT restored — it stays at current position
+      // The spec requirement (FR-005) says it should default to 0 if not found
+      // The current implementation doesn't handle this case — focus stays at 1
+      // This test documents the current behavior
+      act(() => {
+        result.current.showCategoriesView();
+      });
+
+      // Current behavior: focus stays at 1 because selectedCategory is falsy
+      // Expected per spec: should default to 0
+      expect(result.current.focusedCategoryIndex).toBe(0);
+    });
+  });
+
+  describe('focus state - rapid key presses and edge cases (US3)', () => {
+    const manyCategories: Category[] = Array.from({ length: 15 }, (_, i) => ({
+      category_id: String(i + 1),
+      category_name: `Category ${i + 1}`,
+      parent_id: 0,
+    }));
+
+    it('T048: Rapid moveNextItem calls (10+) produce correct final index', () => {
+      const { result } = renderHook(() =>
+        useCascadingMenu({
+          categories: manyCategories,
+          currentCategory: '1',
+          onChannelChange: mockOnChannelChange,
+        })
+      );
+
+      expect(result.current.focusedCategoryIndex).toBe(0);
+
+      // Call moveNextItem 12 times in rapid succession
+      act(() => {
+        for (let i = 0; i < 12; i++) {
+          result.current.moveNextItem();
+        }
+      });
+
+      // Should be at index 12 (capped at manyCategories.length - 1 = 14)
+      expect(result.current.focusedCategoryIndex).toBe(12);
+    });
+
+    it('T049: Alternating moveNextItem/movePreviousItem calls produce correct final index', () => {
+      const { result } = renderHook(() =>
+        useCascadingMenu({
+          categories: manyCategories,
+          currentCategory: '1',
+          onChannelChange: mockOnChannelChange,
+        })
+      );
+
+      expect(result.current.focusedCategoryIndex).toBe(0);
+
+      // 5 next, 3 prev = net +2
+      act(() => {
+        for (let i = 0; i < 5; i++) {
+          result.current.moveNextItem();
+        }
+        for (let i = 0; i < 3; i++) {
+          result.current.movePreviousItem();
+        }
+      });
+
+      expect(result.current.focusedCategoryIndex).toBe(2);
+    });
+
+    it('T050: movePreviousPanel during channel loading does not cause errors', async () => {
+      // Use a delayed promise to ensure loading state is active
+      xtreamApi.getStreams.mockReturnValue(
+        new Promise<LiveStream[]>((resolve) => setTimeout(() => resolve(mockChannels), 100))
+      );
+      xtreamApi.getEPG.mockResolvedValue([]);
+
+      const { result } = renderHook(() =>
+        useCascadingMenu({
+          categories: mockCategories,
+          currentCategory: '1',
+          onChannelChange: mockOnChannelChange,
+        })
+      );
+
+      act(() => {
+        result.current.openMenu();
+      });
+
+      // Start loading channels (this is async)
+      const loadPromise = act(async () => {
+        await result.current.selectCategory('1');
+      });
+
+      // movePreviousPanel during loading should not cause errors
+      expect(() => {
+        act(() => {
+          result.current.movePreviousPanel();
+        });
+      }).not.toThrow();
+
+      // Wait for loading to complete
+      await loadPromise;
+
+      // Menu should be closed (movePreviousPanel on panel 0 closes it)
+      // or in categories view if it was on panel 1
+      expect(result.current.activePanel).toBe(0);
+    });
+
+    it('T051: Hook initializes with correct defaults and all callbacks available', () => {
+      const { result } = renderHook(() =>
+        useCascadingMenu({
+          categories: mockCategories,
+          currentCategory: '1',
+          onChannelChange: mockOnChannelChange,
+        })
+      );
+
+      // Verify initial state
+      expect(result.current.isOpen).toBe(false);
+      expect(result.current.activePanel).toBe(0);
+      expect(result.current.viewMode).toBe('categories');
+      expect(result.current.focusedCategoryIndex).toBe(0);
+      expect(result.current.focusedChannelIndex).toBe(0);
+
+      // Verify all callbacks are functions
+      expect(typeof result.current.openMenu).toBe('function');
+      expect(typeof result.current.closeMenu).toBe('function');
+      expect(typeof result.current.toggleMenu).toBe('function');
+      expect(typeof result.current.selectCategory).toBe('function');
+      expect(typeof result.current.selectChannel).toBe('function');
+      expect(typeof result.current.selectFocusedItem).toBe('function');
+      expect(typeof result.current.moveNextItem).toBe('function');
+      expect(typeof result.current.movePreviousItem).toBe('function');
+      expect(typeof result.current.moveNextPanel).toBe('function');
+      expect(typeof result.current.movePreviousPanel).toBe('function');
+      expect(typeof result.current.showChannelsView).toBe('function');
+      expect(typeof result.current.showCategoriesView).toBe('function');
+    });
+  });
 });
