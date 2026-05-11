@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
-import { Category, LiveStream } from '../types/xtream';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { Category, LiveStream, EpgListing } from '../types/xtream';
 import { ViewMode } from '../types/menu';
 import { xtreamApi } from '../lib/xtream-api';
+import { UseCascadingMenuReturn } from '../types/streaming-menu';
 
 interface UseCascadingMenuProps {
   categories: Category[];
@@ -11,15 +12,41 @@ interface UseCascadingMenuProps {
   onChannelChange: (channel: LiveStream) => void;
 }
 
-export function useCascadingMenu({ categories, currentCategory, onChannelChange }: UseCascadingMenuProps) {
+const STORAGE_KEY = 'kwick-menu-selection';
+
+function loadStoredSelection(): { categoryId: string | null; channelId: string | null } {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch {
+    // ignore
+  }
+  return { categoryId: null, channelId: null };
+}
+
+function saveStoredSelection(categoryId: string | null, channelId: string | null) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ categoryId, channelId }));
+  } catch {
+    // ignore
+  }
+}
+
+export function useCascadingMenu({ categories, currentCategory, onChannelChange }: UseCascadingMenuProps): UseCascadingMenuReturn {
+  const stored = loadStoredSelection();
+  const initialFetchAttempted = useRef(false);
+  const autoTransitioned = useRef(false);
+
   const [isOpen, setIsOpen] = useState(false);
   const [activePanel, setActivePanel] = useState(0);
   
   // Panel states
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(currentCategory);
-  const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(currentCategory || stored.categoryId);
+  const [selectedChannel, setSelectedChannel] = useState<string | null>(stored.channelId);
   const [channels, setChannels] = useState<LiveStream[]>([]);
-  const [epg, setEpg] = useState<any[]>([]);
+  const [epg, setEpg] = useState<EpgListing[]>([]);
   const [isLoadingChannels, setIsLoadingChannels] = useState(false);
   const [isLoadingEpg, setIsLoadingEpg] = useState(false);
 
@@ -30,6 +57,10 @@ export function useCascadingMenu({ categories, currentCategory, onChannelChange 
   const [focusedCategoryIndex, setFocusedCategoryIndex] = useState(0);
   const [focusedChannelIndex, setFocusedChannelIndex] = useState(0);
 
+  // Persisted last state — survives menu close and page refresh
+  const [lastSelectedCategory, setLastSelectedCategory] = useState<string | null>(currentCategory || stored.categoryId);
+  const [lastSelectedChannel, setLastSelectedChannel] = useState<string | null>(stored.channelId);
+
   // Sync with props
   useEffect(() => {
     if (categories.length > 0 && !selectedCategory) {
@@ -37,20 +68,69 @@ export function useCascadingMenu({ categories, currentCategory, onChannelChange 
     }
   }, [categories, currentCategory]);
 
+  // Restore focus indices when categories/channels change to match last selection
+  useEffect(() => {
+    if (lastSelectedCategory && categories.length > 0) {
+      const index = categories.findIndex(c => c.category_id === lastSelectedCategory);
+      if (index >= 0) {
+        setFocusedCategoryIndex(index);
+      }
+    }
+  }, [categories, lastSelectedCategory]);
+
+  useEffect(() => {
+    if (lastSelectedChannel && channels.length > 0) {
+      const index = channels.findIndex(c => c.stream_id === lastSelectedChannel);
+      if (index >= 0) {
+        setFocusedChannelIndex(index);
+      }
+    }
+  }, [channels, lastSelectedChannel]);
+
+  // On mount or when categories load, if there's a stored category but no channels loaded, fetch them (once only)
+  useEffect(() => {
+    if (initialFetchAttempted.current) return;
+    if (lastSelectedCategory && channels.length === 0 && categories.length > 0) {
+      initialFetchAttempted.current = true;
+      const categoryExists = categories.some(c => c.category_id === lastSelectedCategory);
+      if (categoryExists) {
+        setIsLoadingChannels(true);
+        xtreamApi.getStreams(lastSelectedCategory)
+          .then(streams => {
+            setChannels(streams);
+            if (streams.length > 0 && lastSelectedChannel) {
+              const exists = streams.some(s => s.stream_id === lastSelectedChannel);
+              if (!exists) {
+                setSelectedChannel(streams[0].stream_id);
+                setLastSelectedChannel(streams[0].stream_id);
+                saveStoredSelection(lastSelectedCategory, streams[0].stream_id);
+              }
+            }
+          })
+          .catch(() => setChannels([]))
+          .finally(() => setIsLoadingChannels(false));
+      }
+    }
+  }, [categories]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const openMenu = useCallback(() => {
     setIsOpen(true);
-    setActivePanel(0);
-    setViewMode('categories'); // Reset to categories view for fresh start
-    setFocusedCategoryIndex(0);
-    setFocusedChannelIndex(0);
   }, []);
+
+  // When channels load and menu is open, switch to channels view (once per open)
+  useEffect(() => {
+    if (autoTransitioned.current) return;
+    if (isOpen && lastSelectedCategory && channels.length > 0 && viewMode === 'categories') {
+      autoTransitioned.current = true;
+      setViewMode('channels');
+      setActivePanel(1);
+    }
+  }, [isOpen, channels.length, lastSelectedCategory, viewMode]);
 
   const closeMenu = useCallback(() => {
     setIsOpen(false);
-    setActivePanel(0);
-    setViewMode('categories'); // Reset for next open
-    setFocusedCategoryIndex(0);
-    setFocusedChannelIndex(0);
+    autoTransitioned.current = false;
+    // Do NOT reset selection state — preserve for next open
   }, []);
 
   const showChannelsView = useCallback(() => {
@@ -80,6 +160,8 @@ export function useCascadingMenu({ categories, currentCategory, onChannelChange 
 
   const selectCategory = useCallback(async (categoryId: string) => {
     setSelectedCategory(categoryId);
+    setLastSelectedCategory(categoryId);
+    saveStoredSelection(categoryId, null);
     setFocusedChannelIndex(0); // Reset channel focus when category changes
     setIsLoadingChannels(true);
     setChannels([]);
@@ -90,6 +172,8 @@ export function useCascadingMenu({ categories, currentCategory, onChannelChange 
       setChannels(streams);
       if (streams.length > 0) {
         setSelectedChannel(streams[0].stream_id);
+        setLastSelectedChannel(streams[0].stream_id);
+        saveStoredSelection(categoryId, streams[0].stream_id);
         // Auto-load EPG for first channel
         setIsLoadingEpg(true);
         try {
@@ -113,6 +197,8 @@ export function useCascadingMenu({ categories, currentCategory, onChannelChange 
 
   const selectChannel = useCallback(async (channel: LiveStream) => {
     setSelectedChannel(channel.stream_id);
+    setLastSelectedChannel(channel.stream_id);
+    saveStoredSelection(lastSelectedCategory, channel.stream_id);
     onChannelChange(channel);
     
     // Load EPG automatically
@@ -126,7 +212,7 @@ export function useCascadingMenu({ categories, currentCategory, onChannelChange 
     } finally {
       setIsLoadingEpg(false);
     }
-  }, [onChannelChange]);
+  }, [onChannelChange, lastSelectedCategory]);
 
   const moveNextItem = useCallback(() => {
     if (viewMode === 'categories') {
@@ -146,7 +232,7 @@ export function useCascadingMenu({ categories, currentCategory, onChannelChange 
       if (channels.length === 0) return;
       setFocusedChannelIndex(prev => Math.max(prev - 1, 0));
     }
-  }, [viewMode]);
+  }, [viewMode, categories.length, channels.length]);
 
   const selectFocusedItem = useCallback(() => {
     if (isLoadingChannels) return;
@@ -178,16 +264,12 @@ export function useCascadingMenu({ categories, currentCategory, onChannelChange 
   }, [viewMode, categories, focusedCategoryIndex, selectCategory]);
 
   const movePreviousPanel = useCallback(() => {
-    setActivePanel(prev => {
-      if (prev === 0) {
-        closeMenu();
-        return 0;
-      }
-      // When returning from channels to categories, restore focus
+    if (viewMode === 'channels') {
       showCategoriesView();
-      return 0;
-    });
-  }, [closeMenu, showCategoriesView]);
+    } else {
+      closeMenu();
+    }
+  }, [viewMode, closeMenu, showCategoriesView]);
 
   return {
     isOpen,

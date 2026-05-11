@@ -10,11 +10,8 @@ import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation';
 import { useCascadingMenu } from '../hooks/useCascadingMenu';
 import { VideoPlayer } from '../components/player/VideoPlayer';
 import { ErrorToast } from '../components/player/ErrorToast';
-import { MenuOverlay } from '../components/menu/MenuOverlay';
-import { CategoriesPanel } from '../components/menu/CategoriesPanel';
-import { ChannelsPanel } from '../components/menu/ChannelsPanel';
-import { EPGPanel } from '../components/menu/EPGPanel';
 import { SessionError } from '../components/auth/SessionError';
+import { StreamingMenuOverlay } from '../components/streaming-ui/StreamingMenuOverlay';
 import { Category, LiveStream } from '../types/xtream';
 import { xtreamApi } from '../lib/xtream-api';
 import { getCredentials } from '../lib/storage';
@@ -47,7 +44,6 @@ export default function PlayerPage() {
     { revalidateOnFocus: false, dedupingInterval: 300000 }
   );
 
-  // Initialize player
   useEffect(() => {
     const initPlayer = async () => {
       if (!categories || !Array.isArray(categories) || categories.length === 0) return;
@@ -95,8 +91,7 @@ export default function PlayerPage() {
         }
 
         setIsInitializing(false);
-      } catch (error) {
-        console.error('Failed to initialize player:', error);
+      } catch {
         setIsInitializing(false);
       }
     };
@@ -112,14 +107,12 @@ export default function PlayerPage() {
     resetError();
   }, [saveCurrentChannel, resetError]);
 
-  // Cascading Menu Hook
   const menu = useCascadingMenu({
     categories: categories || [],
     currentCategory,
     onChannelChange: handleChannelChange
   });
 
-  // Keyboard Navigation
   useKeyboardNavigation({
     onToggleMenu: menu.toggleMenu,
     onMoveNext: menu.moveNextItem,
@@ -131,9 +124,6 @@ export default function PlayerPage() {
     isMenuOpen: menu.isOpen
   });
 
-  // After hydration, check if credentials exist. If not, redirect to login.
-  // Do NOT call checkStoredAuth here — let the player initialize immediately.
-  // Credential verification happens implicitly when the player makes API calls.
   useEffect(() => {
     if (_hasHydrated && !isAuthenticated) {
       const stored = getCredentials();
@@ -143,7 +133,6 @@ export default function PlayerPage() {
     }
   }, [_hasHydrated, isAuthenticated, router]);
 
-  // Show loading while hydrating or initializing player
   if (!_hasHydrated || isInitializing) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -160,7 +149,6 @@ export default function PlayerPage() {
     );
   }
 
-  // Show error with retry if API verification failed (from manual checkStoredAuth call)
   if (authError && _hasHydrated && !isAuthenticated && !isInitializing) {
     return (
       <SessionError
@@ -201,7 +189,6 @@ export default function PlayerPage() {
 
   return (
     <div className="relative w-screen h-screen bg-black overflow-hidden">
-      {/* Video Player */}
       <VideoPlayer
         key={currentChannel.stream_id}
         channel={currentChannel}
@@ -213,7 +200,6 @@ export default function PlayerPage() {
         onBuffering={handleBuffering}
       />
 
-      {/* Loading/Retrying Overlay */}
       {(playerState === 'loading' || playerState === 'buffering' || isRetrying) && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10 pointer-events-none">
           <div className="flex flex-col items-center">
@@ -228,7 +214,6 @@ export default function PlayerPage() {
         </div>
       )}
 
-      {/* Error Toast System */}
       <ErrorToast
         error={error}
         isRetrying={isRetrying}
@@ -236,44 +221,13 @@ export default function PlayerPage() {
         onDismiss={() => {}}
       />
 
-      {/* Cascading Menu */}
-      <MenuOverlay
+      <StreamingMenuOverlay
         isOpen={menu.isOpen}
         onClose={menu.closeMenu}
-        activePanel={menu.activePanel}
-      >
-        {categories && (
-          <>
-            <CategoriesPanel
-              categories={categories}
-              selectedId={menu.selectedCategory}
-              focusedIndex={menu.focusedCategoryIndex}
-              isActive={menu.activePanel === 0}
-              onSelect={menu.selectCategory}
-            />
-            {menu.viewMode === 'channels' && (
-              <>
-                <ChannelsPanel
-                  channels={menu.channels}
-                  selectedId={menu.selectedChannel}
-                  focusedIndex={menu.focusedChannelIndex}
-                  isActive={menu.activePanel === 1}
-                  isLoading={menu.isLoadingChannels}
-                  onSelect={menu.selectChannel}
-                  onBack={menu.showCategoriesView}
-                />
-                <EPGPanel
-                  epg={menu.epg}
-                  isActive={menu.activePanel === 2}
-                  isLoading={menu.isLoadingEpg}
-                />
-              </>
-            )}
-          </>
-        )}
-      </MenuOverlay>
+        categories={categories || []}
+        menuState={menu}
+      />
 
-      {/* Channel Info */}
       <div className="absolute bottom-4 left-4 text-white/70 text-sm z-20 pointer-events-none">
         <p className="font-medium">{currentChannel.name}</p>
         <p className="text-xs">{categories?.find(c => c.category_id === currentCategory)?.category_name}</p>

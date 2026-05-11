@@ -46,3 +46,21 @@ export interface AuthResult {
   userInfo?: UserInfo;
   error?: string;
 }
+
+export interface EpgListing {
+  id: string;
+  title: string;
+  start: string;
+  end: string | null;
+  description?: string;
+  start_timestamp?: string;
+  stop_timestamp?: string;
+  stop?: string;
+  lang?: string;
+  channel_id?: string;
+  epg_id?: string;
+}
+
+export interface EpgResponse {
+  epg_listings?: EpgListing[];
+}

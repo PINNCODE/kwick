@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { useCascadingMenu } from '../useCascadingMenu';
 import { Category, LiveStream } from '../../types/xtream';
 import { xtreamApi } from '../../lib/xtream-api';
@@ -6,10 +6,26 @@ import { xtreamApi } from '../../lib/xtream-api';
 // Mock the xtream API
 jest.mock('../../lib/xtream-api', () => ({
   xtreamApi: {
-    getStreams: jest.fn(),
-    getEPG: jest.fn(),
+    getStreams: jest.fn().mockResolvedValue([]),
+    getEPG: jest.fn().mockResolvedValue([]),
   },
 }));
+
+// Mock localStorage
+const mockLocalStorage = {
+  getItem: jest.fn(() => null),
+  setItem: jest.fn(),
+  removeItem: jest.fn(),
+  clear: jest.fn(),
+};
+Object.defineProperty(window, 'localStorage', { value: mockLocalStorage });
+
+beforeEach(() => {
+  mockLocalStorage.getItem.mockReturnValue(null);
+  mockLocalStorage.setItem.mockClear();
+  (xtreamApi.getStreams as jest.Mock).mockResolvedValue([]);
+  (xtreamApi.getEPG as jest.Mock).mockResolvedValue([]);
+});
 
 const mockCategories: Category[] = [
   { category_id: '1', category_name: 'Sports', parent_id: 0 },
@@ -53,11 +69,11 @@ describe('useCascadingMenu', () => {
       expect(result.current.viewMode).toBe('categories');
     });
 
-    it('should open menu in categories view', () => {
+    it('should open menu in categories view when no selection', () => {
       const { result } = renderHook(() =>
         useCascadingMenu({
           categories: mockCategories,
-          currentCategory: '1',
+          currentCategory: '',
           onChannelChange: mockOnChannelChange,
         })
       );
@@ -69,6 +85,36 @@ describe('useCascadingMenu', () => {
       expect(result.current.isOpen).toBe(true);
       expect(result.current.viewMode).toBe('categories');
       expect(result.current.activePanel).toBe(0);
+    });
+
+    it('should open menu in channels view when there is a last selection', async () => {
+      xtreamApi.getStreams.mockResolvedValue(mockChannels);
+      xtreamApi.getEPG.mockResolvedValue([]);
+
+      const { result } = renderHook(() =>
+        useCascadingMenu({
+          categories: mockCategories,
+          currentCategory: '1',
+          onChannelChange: mockOnChannelChange,
+        })
+      );
+
+      act(() => {
+        result.current.selectCategory('1');
+      });
+      await act(async () => {});
+
+      act(() => {
+        result.current.closeMenu();
+      });
+
+      act(() => {
+        result.current.openMenu();
+      });
+
+      expect(result.current.isOpen).toBe(true);
+      expect(result.current.viewMode).toBe('channels');
+      expect(result.current.activePanel).toBe(1);
     });
 
     it('should switch to channels view when category selected', async () => {
@@ -119,7 +165,7 @@ describe('useCascadingMenu', () => {
       expect(result.current.activePanel).toBe(0);
     });
 
-    it('should reset to categories view when menu closed', async () => {
+    it('should preserve channels view when menu closed', async () => {
       xtreamApi.getStreams.mockResolvedValue(mockChannels);
 
       const { result } = renderHook(() =>
@@ -147,10 +193,11 @@ describe('useCascadingMenu', () => {
       });
 
       expect(result.current.isOpen).toBe(false);
-      expect(result.current.viewMode).toBe('categories');
+      // View mode is preserved, not reset
+      expect(result.current.viewMode).toBe('channels');
     });
 
-    it('should always reset to categories view on menu open', async () => {
+    it('should restore last view state on menu open', async () => {
       xtreamApi.getStreams.mockResolvedValue(mockChannels);
 
       const { result } = renderHook(() =>
@@ -177,14 +224,14 @@ describe('useCascadingMenu', () => {
         result.current.closeMenu();
       });
 
-      // Reopen menu
+      // Re-open — should restore channels view
       act(() => {
         result.current.openMenu();
       });
 
-      // Should be back to categories
-      expect(result.current.viewMode).toBe('categories');
-      expect(result.current.activePanel).toBe(0);
+      expect(result.current.isOpen).toBe(true);
+      expect(result.current.viewMode).toBe('channels');
+      expect(result.current.activePanel).toBe(1);
     });
   });
 
@@ -651,8 +698,8 @@ describe('useCascadingMenu', () => {
     });
   });
 
-  describe('focus state - reset behavior (US3)', () => {
-    it('T019: openMenu resets focusedCategoryIndex and focusedChannelIndex to 0', () => {
+  describe('focus state - persistence behavior', () => {
+    it('T019: openMenu preserves focusedCategoryIndex and focusedChannelIndex', () => {
       const { result } = renderHook(() =>
         useCascadingMenu({
           categories: mockCategories,
@@ -668,16 +715,15 @@ describe('useCascadingMenu', () => {
 
       expect(result.current.focusedCategoryIndex).toBe(1);
 
-      // Open menu should reset
+      // Open menu preserves focus
       act(() => {
         result.current.openMenu();
       });
 
-      expect(result.current.focusedCategoryIndex).toBe(0);
-      expect(result.current.focusedChannelIndex).toBe(0);
+      expect(result.current.focusedCategoryIndex).toBe(1);
     });
 
-    it('T020: closeMenu resets focusedCategoryIndex and focusedChannelIndex to 0', () => {
+    it('T020: closeMenu preserves focusedCategoryIndex and focusedChannelIndex', () => {
       const { result } = renderHook(() =>
         useCascadingMenu({
           categories: mockCategories,
@@ -697,8 +743,8 @@ describe('useCascadingMenu', () => {
         result.current.closeMenu();
       });
 
-      expect(result.current.focusedCategoryIndex).toBe(0);
-      expect(result.current.focusedChannelIndex).toBe(0);
+      // Focus is preserved, not reset
+      expect(result.current.focusedCategoryIndex).toBe(1);
     });
 
     it('T021: selectCategory resets focusedChannelIndex to 0', async () => {
@@ -785,6 +831,10 @@ describe('useCascadingMenu', () => {
         })
       );
 
+      await waitFor(() => {
+        expect(result.current.isLoadingChannels).toBe(false);
+      });
+
       act(() => {
         result.current.moveNextItem();
       });
@@ -795,7 +845,9 @@ describe('useCascadingMenu', () => {
         result.current.selectFocusedItem();
       });
 
-      expect(result.current.viewMode).toBe('channels');
+      await waitFor(() => {
+        expect(result.current.viewMode).toBe('channels');
+      });
     });
 
     it('T032: selectFocusedItem calls selectCategory with correct category ID', async () => {
@@ -810,12 +862,17 @@ describe('useCascadingMenu', () => {
         })
       );
 
+      await waitFor(() => {
+        expect(result.current.isLoadingChannels).toBe(false);
+      });
+
       await act(async () => {
         result.current.selectFocusedItem();
       });
 
-      // Should select the first category (index 0) which is '1'
-      expect(result.current.viewMode).toBe('channels');
+      await waitFor(() => {
+        expect(result.current.viewMode).toBe('channels');
+      });
     });
 
     it('T033: selectFocusedItem on first category (index 0) selects it correctly', async () => {
@@ -830,13 +887,19 @@ describe('useCascadingMenu', () => {
         })
       );
 
+      await waitFor(() => {
+        expect(result.current.isLoadingChannels).toBe(false);
+      });
+
       expect(result.current.focusedCategoryIndex).toBe(0);
 
       await act(async () => {
         result.current.selectFocusedItem();
       });
 
-      expect(result.current.viewMode).toBe('channels');
+      await waitFor(() => {
+        expect(result.current.viewMode).toBe('channels');
+      });
     });
 
     it('T034: selectFocusedItem on last category selects it correctly', async () => {
@@ -851,6 +914,10 @@ describe('useCascadingMenu', () => {
         })
       );
 
+      await waitFor(() => {
+        expect(result.current.isLoadingChannels).toBe(false);
+      });
+
       // Move to last category
       act(() => {
         result.current.moveNextItem();
@@ -862,7 +929,9 @@ describe('useCascadingMenu', () => {
         result.current.selectFocusedItem();
       });
 
-      expect(result.current.viewMode).toBe('channels');
+      await waitFor(() => {
+        expect(result.current.viewMode).toBe('channels');
+      });
     });
 
     // US2: Enter selects channel
