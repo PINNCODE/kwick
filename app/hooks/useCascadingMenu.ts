@@ -130,16 +130,20 @@ export function useCascadingMenu({ categories, currentCategory, onChannelChange 
 
   const moveNextItem = useCallback(() => {
     if (viewMode === 'categories') {
+      if (categories.length === 0) return;
       setFocusedCategoryIndex(prev => Math.min(prev + 1, categories.length - 1));
     } else {
+      if (channels.length === 0) return;
       setFocusedChannelIndex(prev => Math.min(prev + 1, channels.length - 1));
     }
   }, [viewMode, categories.length, channels.length]);
 
   const movePreviousItem = useCallback(() => {
     if (viewMode === 'categories') {
+      if (categories.length === 0) return;
       setFocusedCategoryIndex(prev => Math.max(prev - 1, 0));
     } else {
+      if (channels.length === 0) return;
       setFocusedChannelIndex(prev => Math.max(prev - 1, 0));
     }
   }, [viewMode]);
