@@ -9,6 +9,8 @@ import {
   clearCredentials 
 } from '../lib/storage';
 
+const API_TIMEOUT = 5000; // 5 seconds
+
 interface AuthState {
   // State
   isAuthenticated: boolean;
@@ -16,6 +18,8 @@ interface AuthState {
   error: string | null;
   userInfo: UserInfo | null;
   host: string;
+  /** Internal flag — set to true after Zustand restores state from localStorage. NOT persisted. */
+  _hasHydrated: boolean;
   
   // Actions
   login: (credentials: Credentials) => Promise<boolean>;
@@ -33,18 +37,25 @@ export const useXtreamAuth = create<AuthState>()(
       error: null,
       userInfo: null,
       host: '',
+      _hasHydrated: false,
 
       // Login action
       login: async (credentials: Credentials) => {
         set({ isLoading: true, error: null });
 
         try {
-          // Step 1: Check connectivity
+          // Step 1: Check connectivity with timeout
+          const healthController = new AbortController();
+          const healthTimeout = setTimeout(() => healthController.abort(), API_TIMEOUT);
+
           const healthResponse = await fetch('/api/xtream/health', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ host: credentials.host }),
+            signal: healthController.signal,
           });
+
+          clearTimeout(healthTimeout);
 
           const healthData = await healthResponse.json();
 
@@ -56,12 +67,18 @@ export const useXtreamAuth = create<AuthState>()(
             return false;
           }
 
-          // Step 2: Authenticate
+          // Step 2: Authenticate with timeout
+          const authController = new AbortController();
+          const authTimeout = setTimeout(() => authController.abort(), API_TIMEOUT);
+
           const authResponse = await fetch('/api/xtream/auth', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(credentials),
+            signal: authController.signal,
           });
+
+          clearTimeout(authTimeout);
 
           const authData = await authResponse.json();
 
@@ -124,6 +141,9 @@ export const useXtreamAuth = create<AuthState>()(
         set({ isLoading: true });
 
         try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), API_TIMEOUT);
+
           // Verify credentials are still valid
           const authResponse = await fetch('/api/xtream/auth', {
             method: 'POST',
@@ -133,7 +153,10 @@ export const useXtreamAuth = create<AuthState>()(
               username: stored.username,
               password: stored.password,
             }),
+            signal: controller.signal,
           });
+
+          clearTimeout(timeout);
 
           const authData = await authResponse.json();
 
@@ -159,13 +182,10 @@ export const useXtreamAuth = create<AuthState>()(
             return false;
           }
         } catch (error) {
-          clearCredentials();
+          // Timeout or network error — preserve credentials, show retry message
           set({
-            isAuthenticated: false,
             isLoading: false,
-            error: 'Error al verificar sesión. Por favor inicia sesión nuevamente.',
-            userInfo: null,
-            host: '',
+            error: 'No se pudo conectar al servidor. Verifica tu conexión e intenta de nuevo.',
           });
           return false;
         }
@@ -178,6 +198,11 @@ export const useXtreamAuth = create<AuthState>()(
         userInfo: state.userInfo,
         host: state.host,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state._hasHydrated = true;
+        }
+      },
     }
   )
 );

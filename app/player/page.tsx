@@ -14,6 +14,7 @@ import { MenuOverlay } from '../components/menu/MenuOverlay';
 import { CategoriesPanel } from '../components/menu/CategoriesPanel';
 import { ChannelsPanel } from '../components/menu/ChannelsPanel';
 import { EPGPanel } from '../components/menu/EPGPanel';
+import { SessionError } from '../components/auth/SessionError';
 import { Category, LiveStream } from '../types/xtream';
 import { xtreamApi } from '../lib/xtream-api';
 import { getCredentials } from '../lib/storage';
@@ -22,7 +23,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function PlayerPage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading: isAuthLoading } = useXtreamAuth();
+  const { isAuthenticated, isLoading: isAuthLoading, _hasHydrated, error: authError, checkStoredAuth, clearError } = useXtreamAuth();
   const { saveCurrentChannel, getLastWatchedChannel } = useChannelPersistence();
   const { 
     playerState, 
@@ -130,14 +131,20 @@ export default function PlayerPage() {
     isMenuOpen: menu.isOpen
   });
 
-  // Redirect to login if not authenticated
+  // After hydration, check if credentials exist. If not, redirect to login.
+  // Do NOT call checkStoredAuth here — let the player initialize immediately.
+  // Credential verification happens implicitly when the player makes API calls.
   useEffect(() => {
-    if (!isAuthLoading && !isAuthenticated) {
-      router.push('/login');
+    if (_hasHydrated && !isAuthenticated) {
+      const stored = getCredentials();
+      if (!stored) {
+        router.push('/login');
+      }
     }
-  }, [isAuthenticated, isAuthLoading, router]);
+  }, [_hasHydrated, isAuthenticated, router]);
 
-  if (isAuthLoading || isInitializing) {
+  // Show loading while hydrating or initializing player
+  if (!_hasHydrated || isInitializing) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="flex flex-col items-center">
@@ -150,6 +157,19 @@ export default function PlayerPage() {
           </p>
         </div>
       </div>
+    );
+  }
+
+  // Show error with retry if API verification failed (from manual checkStoredAuth call)
+  if (authError && _hasHydrated && !isAuthenticated && !isInitializing) {
+    return (
+      <SessionError
+        message={authError}
+        onRetry={() => {
+          clearError();
+          checkStoredAuth();
+        }}
+      />
     );
   }
 

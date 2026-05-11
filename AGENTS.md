@@ -7,5 +7,5 @@ This version has breaking changes — APIs, conventions, and file structure may 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`<path from .specify/feature.json feature_directory>/plan.md`
+`specs/005-fix-auth-persistence-redirect/plan.md`
 <!-- SPECKIT END -->
