@@ -1,6 +1,6 @@
 // Xtream Codes API Client
 
-import { Category, LiveStream, UserInfo, Credentials, AuthResult } from '../types/xtream';
+import { Category, LiveStream, Credentials, AuthResult, EpgResponse, EpgListing } from '../types/xtream';
 
 class XtreamAPIClient {
   private host: string = '';
@@ -123,7 +123,7 @@ class XtreamAPIClient {
     return Array.isArray(data) ? data : [];
   }
 
-  async getEPG(streamId: string): Promise<any[]> {
+  async getEPG(streamId: string): Promise<EpgListing[]> {
     this.ensureAuthenticated();
     
     try {
@@ -139,10 +139,9 @@ class XtreamAPIClient {
         return [];
       }
       
-      const data = await response.json();
+      const data: EpgResponse = await response.json();
       return data.epg_listings || [];
     } catch (error) {
-      console.error('Error fetching EPG:', error);
       return [];
     }
   }

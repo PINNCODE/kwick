@@ -63,3 +63,26 @@ body {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Ambient stadium lights animation */
+@keyframes ambient-pulse {
+  0%, 100% {
+    opacity: 0.03;
+  }
+  50% {
+    opacity: 0.08;
+  }
+}
+
+.ambient-lights {
+  background: radial-gradient(ellipse at 50% 0%, rgba(59, 130, 246, 0.15) 0%, transparent 60%),
+              radial-gradient(ellipse at 20% 10%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
+              radial-gradient(ellipse at 80% 10%, rgba(59, 130, 246, 0.08) 0%, transparent 40%);
+  animation: ambient-pulse 4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-lights {
+    animation: none;
+  }
+}
