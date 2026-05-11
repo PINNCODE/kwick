@@ -28,6 +28,7 @@ export function VideoPlayer({
   const hlsRef = useRef<Hls | null>(null);
   const retryCountRef = useRef(0);
   const maxRetries = 3;
+  const hasUnmutedRef = useRef(false);
   
   // Store callbacks in refs to prevent re-creation of setupHls
   const onErrorRef = useRef(onError);
@@ -130,8 +131,17 @@ export function VideoPlayer({
       // Events
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         if (autoPlay && videoRef.current) {
-          videoRef.current.play().catch(() => {
-            // Autoplay blocked, will need user interaction
+          videoRef.current.play().then(() => {
+            if (!hasUnmutedRef.current && videoRef.current) {
+              videoRef.current.muted = false;
+              hasUnmutedRef.current = true;
+            }
+          }).catch(() => {
+            // Autoplay blocked — start muted, unmute on user interaction
+            if (videoRef.current) {
+              videoRef.current.muted = true;
+              videoRef.current.play().catch(() => {});
+            }
           });
         }
       });
@@ -149,8 +159,16 @@ export function VideoPlayer({
       // Native HLS support (Safari)
       videoRef.current.src = streamUrl;
       if (autoPlay) {
-        videoRef.current.play().catch(() => {
-          // Autoplay blocked
+        videoRef.current.play().then(() => {
+          if (!hasUnmutedRef.current && videoRef.current) {
+            videoRef.current.muted = false;
+            hasUnmutedRef.current = true;
+          }
+        }).catch(() => {
+          if (videoRef.current) {
+            videoRef.current.muted = true;
+            videoRef.current.play().catch(() => {});
+          }
         });
       }
     }
@@ -184,14 +202,22 @@ export function VideoPlayer({
     };
   }, []);
 
+  // Unmute on first user click/tap
+  const handleVideoClick = useCallback(() => {
+    if (videoRef.current && videoRef.current.muted) {
+      videoRef.current.muted = false;
+      hasUnmutedRef.current = true;
+    }
+  }, []);
+
   return (
     <video
       ref={videoRef}
       className="w-full h-full object-contain"
       autoPlay={autoPlay}
       playsInline
-      muted={false}
       controls={false}
+      onClick={handleVideoClick}
       style={{
         position: 'fixed',
         top: 0,
