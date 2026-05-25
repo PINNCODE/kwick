@@ -25,7 +25,6 @@ export class StreamPlayerComponent implements OnInit, OnDestroy {
   readonly streamUrl = input.required<string>();
   readonly streamName = input<string>();
   readonly thumbnail = input<string>();
-  readonly autoplay = input(true);
   readonly muted = input(false);
   readonly controls = input(true);
 
@@ -62,11 +61,9 @@ export class StreamPlayerComponent implements OnInit, OnDestroy {
       this.hls.attachMedia(video);
 
       this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        if (this.autoplay()) {
-          video.play().catch(() => {
+        video.play().catch(() => {
             this.state.setState('waiting');
           });
-        }
       });
 
       this.hls.on(Hls.Events.FRAG_BUFFERED, () => {
@@ -94,11 +91,9 @@ export class StreamPlayerComponent implements OnInit, OnDestroy {
       video.src = this.streamUrl();
       video.addEventListener('loadedmetadata', () => {
         this.state.setState('playing');
-        if (this.autoplay()) {
-          video.play().catch(() => {
-            this.state.setState('waiting');
-          });
-        }
+        video.play().catch(() => {
+          this.state.setState('waiting');
+        });
       });
     } else {
       this.state.setError({
