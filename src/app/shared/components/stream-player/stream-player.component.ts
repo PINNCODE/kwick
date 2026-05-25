@@ -9,8 +9,8 @@ import {
   effect,
 } from '@angular/core';
 import Hls from 'hls.js';
-import { ErrorCode } from '../../../../core/error/error-codes';
-import { StreamPlayerState, PlayerState, PlayerError } from './stream-player.state';
+import { ErrorCode } from '../../../../core';
+import { StreamPlayerState, PlayerState, PlayerError } from '../../state/stream-player.state';
 
 @Component({
   selector: 'app-stream-player',

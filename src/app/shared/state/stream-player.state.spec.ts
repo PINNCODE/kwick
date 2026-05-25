@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { StreamPlayerState, PlayerState } from './stream-player.state';
-import { ErrorCode } from '../../../../core/error/error-codes';
+import { ErrorCode } from '../../../core';
 
 describe('StreamPlayerState', () => {
   let service: StreamPlayerState;

@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { StreamPlayerComponent } from './stream-player.component';
-import { StreamPlayerState } from './stream-player.state';
-import { ErrorCode } from '../../../../core/error/error-codes';
+import { StreamPlayerState } from '../../state/stream-player.state';
+import { ErrorCode } from '../../../../core';
 import Hls from 'hls.js';
 
 let mockHlsInstance: any;

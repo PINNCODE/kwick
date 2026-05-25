@@ -1,5 +1,5 @@
 import Dexie, { Table } from 'dexie';
-import { CredentialRecord } from '../../core/ports/outbound/credential-storage.port';
+import { CredentialRecord } from '../../core';
 
 export class IptvCredentialDatabase extends Dexie {
   credentials!: Table<CredentialRecord, string>;

@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { ErrorCode } from '../../../../core/error/error-codes';
+import { ErrorCode } from '../../../core';
 
 export type PlayerState = 'idle' | 'loading' | 'playing' | 'paused' | 'waiting' | 'error';
 

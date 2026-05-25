@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import Dexie from 'dexie';
-import { CredentialStoragePort, CredentialRecord } from '../../core/ports/outbound/credential-storage.port';
+import { CredentialStoragePort, CredentialRecord } from '../../core';
 import { IptvCredentialDatabase } from './dexie-config';
 
 @Injectable()

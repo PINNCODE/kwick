@@ -2,13 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
-import { IptvApiPort } from '../../core/ports/outbound/iptv-api.port';
-import { AuthResult } from '../../core/domain/entities/auth-result.entity';
-import { Category } from '../../core/domain/entities/category.entity';
-import { Stream } from '../../core/domain/entities/stream.entity';
-import { EPGListing } from '../../core/domain/entities/epg-listing.entity';
-import { IptvApiException } from '../../core/error/iptv-api.exception';
-import { ErrorCode } from '../../core/error/error-codes';
+import { IptvApiPort, AuthResult, Category, Stream, EPGListing, IptvApiException, ErrorCode } from '../../core';
 
 interface XtreamApiResponse {
   user?: {

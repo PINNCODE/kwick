@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { EncryptionPort, EncryptedPayload } from '../../core/ports/outbound/encryption.port';
+import { EncryptionPort, EncryptedPayload } from '../../core';
 
 const PBKDF2_ITERATIONS = 100000;
 const KEY_LENGTH = 256;

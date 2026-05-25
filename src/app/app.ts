@@ -1,5 +1,5 @@
 import { Component, signal } from '@angular/core';
-import { StreamPlayerComponent, PlayerState, PlayerError } from './shared/components/stream-player';
+import { StreamPlayerComponent, PlayerState, PlayerError } from './shared';
 
 @Component({
   selector: 'app-root',
