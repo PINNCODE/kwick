@@ -1,10 +1,9 @@
 import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
 import { StreamPlayerComponent, PlayerState, PlayerError } from './shared/components/stream-player';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, StreamPlayerComponent],
+  imports: [StreamPlayerComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })

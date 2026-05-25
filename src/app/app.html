@@ -1,83 +1,5 @@
-<style>
-  :host {
-    display: block;
-    height: 100dvh;
-    background: #000;
-  }
-
-  main {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 1rem;
-    box-sizing: border-box;
-  }
-
-  .player-container {
-    width: 100%;
-    max-width: 1200px;
-  }
-
-  .player-header {
-    color: #fff;
-    margin-bottom: 1rem;
-    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-      Helvetica, Arial, sans-serif;
-  }
-
-  .player-header h1 {
-    font-size: 1.5rem;
-    margin: 0 0 0.25rem;
-    font-weight: 500;
-  }
-
-  .player-header p {
-    font-size: 0.875rem;
-    color: #888;
-    margin: 0;
-  }
-
-  .state-indicator {
-    display: inline-block;
-    padding: 0.25rem 0.75rem;
-    border-radius: 1rem;
-    font-size: 0.75rem;
-    font-weight: 500;
-    text-transform: uppercase;
-    margin-top: 0.5rem;
-  }
-
-  .state-idle { background: #555; color: #fff; }
-  .state-loading { background: #2563eb; color: #fff; }
-  .state-playing { background: #16a34a; color: #fff; }
-  .state-paused { background: #ca8a04; color: #fff; }
-  .state-waiting { background: #ea580c; color: #fff; }
-  .state-error { background: #dc2626; color: #fff; }
-
-  .error-message {
-    color: #dc2626;
-    margin-top: 0.5rem;
-    font-size: 0.875rem;
-  }
-</style>
-
 <main>
   <div class="player-container">
-    <div class="player-header">
-      <h1>KWICK TV</h1>
-      <p>Channel 5 - Live Stream</p>
-      @if (playerState()) {
-        <span class="state-indicator" [class]="'state-' + playerState()">
-          {{ playerState() }}
-        </span>
-      }
-      @if (errorMessage()) {
-        <p class="error-message">{{ errorMessage() }}</p>
-      }
-    </div>
-
     <app-stream-player
       [streamUrl]="streamUrl"
       [streamName]="'Channel 5'"
@@ -89,5 +11,3 @@
     />
   </div>
 </main>
-
-<router-outlet />
