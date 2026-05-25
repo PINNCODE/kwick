@@ -1,0 +1,138 @@
+opencollection: 1.0.0
+info:
+  name: 'IPTV Player '
+config:
+  proxy:
+    inherit: true
+    config:
+      protocol: http
+      hostname: ''
+      port: ''
+      auth:
+        username: ''
+        password: ''
+      bypassProxy: ''
+items:
+  - info:
+      name: Login
+      type: http
+      seq: 1
+    http:
+      method: GET
+      url: '{{host}}/player_api.php?username={{username}}&password={{password}}'
+      params:
+        - name: username
+          value: '{{username}}'
+          type: query
+        - name: password
+          value: '{{password}}'
+          type: query
+      auth: inherit
+    settings:
+      encodeUrl: true
+      timeout: 0
+      followRedirects: true
+      maxRedirects: 5
+  - info:
+      name: Categories
+      type: http
+      seq: 2
+    http:
+      method: GET
+      url: '{{host}}/player_api.php?username={{username}}&password={{password}}&action=get_live_categories'
+      params:
+        - name: username
+          value: '{{username}}'
+          type: query
+        - name: password
+          value: '{{password}}'
+          type: query
+        - name: action
+          value: get_live_categories
+          type: query
+      auth: inherit
+    settings:
+      encodeUrl: true
+      timeout: 0
+      followRedirects: true
+      maxRedirects: 5
+  - info:
+      name: Livestreams
+      type: http
+      seq: 3
+    http:
+      method: GET
+      url: '{{host}}/player_api.php?username={{username}}&password={{password}}&action=get_live_streams'
+      params:
+        - name: username
+          value: '{{username}}'
+          type: query
+        - name: password
+          value: '{{password}}'
+          type: query
+        - name: action
+          value: get_live_streams
+          type: query
+      auth: inherit
+    settings:
+      encodeUrl: true
+      timeout: 0
+      followRedirects: true
+      maxRedirects: 5
+  - info:
+      name: EPG
+      type: http
+      seq: 4
+    http:
+      method: GET
+      url: '{{host}}/player_api.php?username={{username}}&password={{password}}&action=get_short_epg&stream_id=794897'
+      params:
+        - name: username
+          value: '{{username}}'
+          type: query
+        - name: password
+          value: '{{password}}'
+          type: query
+        - name: action
+          value: get_short_epg
+          type: query
+        - name: stream_id
+          value: '794897'
+          type: query
+      auth: inherit
+    settings:
+      encodeUrl: true
+      timeout: 0
+      followRedirects: true
+      maxRedirects: 5
+  - info:
+      name: Stream
+      type: http
+      seq: 5
+    http:
+      method: GET
+      url: '{{host}}/live/{{username}}/{{password}}/{{channel}}.m3u8'
+      auth: inherit
+    settings:
+      encodeUrl: true
+      timeout: 0
+      followRedirects: true
+      maxRedirects: 5
+request:
+  variables:
+    - name: host
+      value: ''
+    - name: username
+      value: ''
+    - name: password
+      value: ''
+    - name: channel
+      value: ''
+bundled: true
+extensions:
+  bruno:
+    ignore:
+      - node_modules
+      - .git
+    exportedAt: '2026-05-24T20:39:21.161Z'
+    exportedUsing: Bruno

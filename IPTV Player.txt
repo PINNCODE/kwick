@@ -1,0 +1,149 @@
+{{host}}/player_api.php?username={{username}}&password={{password}}
+
+{
+  "user_info": {
+    "username": "************",
+    "password": "****************",
+    "message": "",
+    "auth": 1,
+    "status": "********",
+    "exp_date": "**********",
+    "is_trial": "********",
+    "active_cons": "********",
+    "created_at": "**************",
+    "max_connections": "********",
+    "allowed_output_formats": [
+      "********",
+      "******"
+    ]
+  },
+  "server_info": {
+    "url": "************",
+    "port": "********",
+    "https_port": "********",
+    "server_protocol": "*********",
+    "rtmp_port": "********",
+    "timezone": "**********",
+    "timestamp_now": "************",
+    "time_now": "**************  **********:********:**********",
+    "process": true
+  }
+}
+
+{{host}}/player_api.php?username={{username}}&password={{password}}&action=get_live_categories
+
+[
+  {
+    "category_id": "144",
+    "category_name": "TV | Eventos Deportivos / Sports Events",
+    "parent_id": 0
+  },
+  {
+    "category_id": "214",
+    "category_name": "TV | Disney",
+    "parent_id": 0
+  },
+]
+
+{{host}}/player_api.php?username={{username}}&password={{password}}&action=get_live_streams
+
+[
+  {
+    "num": 1,
+    "name": "25/05 20:00 CDMX. CMLL. Lunes clásico",
+    "stream_type": "live",
+    "stream_id": 888485,
+    "stream_icon": "https://futuretv.mx/logos/eventos.v516951/luchalibre.cmll.png",
+    "epg_channel_id": null,
+    "added": "1779698651",
+    "is_adult": "0",
+    "category_id": "144",
+    "custom_sid": "",
+    "tv_archive": 0,
+    "direct_source": "",
+    "tv_archive_duration": 0
+  },
+]
+
+{{host}}/player_api.php?username={{username}}&password={{password}}&action=get_short_epg&stream_id=794897
+
+{
+  "epg_listings": [
+    {
+      "id": "1",
+      "epg_id": "1",
+      "channel_id": "canaladn40.mx",
+      "start": "2026-05-25 17:00:00",
+      "end": "2026-05-25 19:00:00",
+      "lang": "es",
+      "title": "TGFzIG5vdGljaWFzIGNvbnRpZ28gY29uIEp1YW4gUGFibG8gZGUgTGVvIHkgVmFpdGlhcmUgTWF0ZW9z",
+      "description": "IE5vIERlc2NyaXB0aW9uIEluZm8=",
+      "start_timestamp": 1779728400,
+      "stop_timestamp": 1779735600,
+      "now_playing": 1,
+      "has_archive": 0
+    },
+    {
+      "id": "2",
+      "epg_id": "1",
+      "channel_id": "canaladn40.mx",
+      "start": "2026-05-25 19:00:00",
+      "end": "2026-05-25 20:00:00",
+      "lang": "es",
+      "title": "QUROIE5vdGljaWFzIGNvbiBSb21pbmEgUmFtb3M=",
+      "description": "IE5vIERlc2NyaXB0aW9uIEluZm8=",
+      "start_timestamp": 1779735600,
+      "stop_timestamp": 1779739200,
+      "now_playing": 0,
+      "has_archive": 0
+    },
+    {
+      "id": "3",
+      "epg_id": "1",
+      "channel_id": "canaladn40.mx",
+      "start": "2026-05-25 20:00:00",
+      "end": "2026-05-25 20:30:00",
+      "lang": "es",
+      "title": "QSBxdWllbiBjb3JyZXNwb25kYQ==",
+      "description": "IE5vIERlc2NyaXB0aW9uIEluZm8=",
+      "start_timestamp": 1779739200,
+      "stop_timestamp": 1779741000,
+      "now_playing": 0,
+      "has_archive": 0
+    },
+    {
+      "id": "4",
+      "epg_id": "1",
+      "channel_id": "canaladn40.mx",
+      "start": "2026-05-25 20:30:00",
+      "end": "2026-05-25 21:00:00",
+      "lang": "es",
+      "title": "RXMgbmVnb2NpbyBjb24gQ2FybG9zIE1vdGE=",
+      "description": "IE5vIERlc2NyaXB0aW9uIEluZm8=",
+      "start_timestamp": 1779741000,
+      "stop_timestamp": 1779742800,
+      "now_playing": 0,
+      "has_archive": 0
+    }
+  ]
+}
+
+{{host}}/live/{{username}}/{{password}}/{{channel}}.m3u8
+
+#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-ALLOW-CACHE:YES
+#EXT-X-TARGETDURATION:10
+#EXT-X-MEDIA-SEQUENCE:1779705809
+#EXTINF:10.010000,
+/play/hls-nginx/03011b3b-fb1c-4387-8c74-a976e07a769b/03011b3b-fb1c-4387-8c74-a976e07a769b_1779705809.ts?token=eyJpdiI6Im5PSWl4enNUTi9PMnNaNEZqZHhlNnc9PSIsInZhbHVlIjoibmtGNXZLOEhZNXFReGFMcndyQUU1NWF4UkFBYk9TUGhTMjVsUU9kZncraXYweTMxS0JaNWYzdDJLL2VlYWhzcyIsIm1hYyI6IjJjMjY1ZjU5ZjRmMWY0ZDczODVjYTgyYzZkMDJjOTY5ODQzMjIxMDdjMzY1YjA4MjQzNjk5YjVkODgwMDg4NGEiLCJ0YWciOiIifQ%3D%3D&h=ec3d60ad44a537d546fa17fe14d3e660&r=5f89b7&rt=22b2c6e65045f7dfa3ab29b6c53f5741&s=2499460&lvtoken=eyJpdiI6InBVR0l6QmxTV3VkOTdkdHY0NlIzaUE9PSIsInZhbHVlIjoidjYraWJkSFl3NTA4R2hOYlgvc3FERGVnQzVodEpXUkFkNUExdXJlVFdQOENiZklDdy82RFU1YklON3RvR0Vsc3dnUU11NDFDOFpsTGxTWFE3Y1VnWCtqK1gwdlJQeHdDZFJvb1ZoSzhYbWI1dW5aUlZIWUkwTnE3Z1dxRGxEbE5kOEdoMnQzS25uSVROaktabEpyTER3RmkyRzJ5MCtKTG9yTFowOEt4M2JabDh1QlF6UnBQcWpxTS9VMURrM2haSXNDVEozTjc4U1RWRlhwc0NBTXZGTzZ2TXBTRFlxaXE1bEdYcm5IamdMdz0iLCJtYWMiOiIyMzdiZmZlM2U1MTE4ODhkNTEzNDkwY2Y5YTMyYjBmMDJjYWViYmI1MTI2OTkyZWE1OGRiYmRhZDE3M2U0ZjM4IiwidGFnIjoiIn0%3D
+#EXTINF:10.010000,
+/play/hls-nginx/03011b3b-fb1c-4387-8c74-a976e07a769b/03011b3b-fb1c-4387-8c74-a976e07a769b_1779705810.ts?token=eyJpdiI6Im5PSWl4enNUTi9PMnNaNEZqZHhlNnc9PSIsInZhbHVlIjoibmtGNXZLOEhZNXFReGFMcndyQUU1NWF4UkFBYk9TUGhTMjVsUU9kZncraXYweTMxS0JaNWYzdDJLL2VlYWhzcyIsIm1hYyI6IjJjMjY1ZjU5ZjRmMWY0ZDczODVjYTgyYzZkMDJjOTY5ODQzMjIxMDdjMzY1YjA4MjQzNjk5YjVkODgwMDg4NGEiLCJ0YWciOiIifQ%3D%3D&h=4a8b17bfef7bd2537b1bed18e666ff71&r=5f89b7&rt=22b2c6e65045f7dfa3ab29b6c53f5741&s=2998600&lvtoken=eyJpdiI6InBVR0l6QmxTV3VkOTdkdHY0NlIzaUE9PSIsInZhbHVlIjoidjYraWJkSFl3NTA4R2hOYlgvc3FERGVnQzVodEpXUkFkNUExdXJlVFdQOENiZklDdy82RFU1YklON3RvR0Vsc3dnUU11NDFDOFpsTGxTWFE3Y1VnWCtqK1gwdlJQeHdDZFJvb1ZoSzhYbWI1dW5aUlZIWUkwTnE3Z1dxRGxEbE5kOEdoMnQzS25uSVROaktabEpyTER3RmkyRzJ5MCtKTG9yTFowOEt4M2JabDh1QlF6UnBQcWpxTS9VMURrM2haSXNDVEozTjc4U1RWRlhwc0NBTXZGTzZ2TXBTRFlxaXE1bEdYcm5IamdMdz0iLCJtYWMiOiIyMzdiZmZlM2U1MTE4ODhkNTEzNDkwY2Y5YTMyYjBmMDJjYWViYmI1MTI2OTkyZWE1OGRiYmRhZDE3M2U0ZjM4IiwidGFnIjoiIn0%3D
+#EXTINF:10.010000,
+/play/hls-nginx/03011b3b-fb1c-4387-8c74-a976e07a769b/03011b3b-fb1c-4387-8c74-a976e07a769b_1779705811.ts?token=eyJpdiI6Im5PSWl4enNUTi9PMnNaNEZqZHhlNnc9PSIsInZhbHVlIjoibmtGNXZLOEhZNXFReGFMcndyQUU1NWF4UkFBYk9TUGhTMjVsUU9kZncraXYweTMxS0JaNWYzdDJLL2VlYWhzcyIsIm1hYyI6IjJjMjY1ZjU5ZjRmMWY0ZDczODVjYTgyYzZkMDJjOTY5ODQzMjIxMDdjMzY1YjA4MjQzNjk5YjVkODgwMDg4NGEiLCJ0YWciOiIifQ%3D%3D&h=86d8c6476cdc7441e86ec946fbf6b53d&r=5f89b7&rt=22b2c6e65045f7dfa3ab29b6c53f5741&s=3467660&lvtoken=eyJpdiI6InBVR0l6QmxTV3VkOTdkdHY0NlIzaUE9PSIsInZhbHVlIjoidjYraWJkSFl3NTA4R2hOYlgvc3FERGVnQzVodEpXUkFkNUExdXJlVFdQOENiZklDdy82RFU1YklON3RvR0Vsc3dnUU11NDFDOFpsTGxTWFE3Y1VnWCtqK1gwdlJQeHdDZFJvb1ZoSzhYbWI1dW5aUlZIWUkwTnE3Z1dxRGxEbE5kOEdoMnQzS25uSVROaktabEpyTER3RmkyRzJ5MCtKTG9yTFowOEt4M2JabDh1QlF6UnBQcWpxTS9VMURrM2haSXNDVEozTjc4U1RWRlhwc0NBTXZGTzZ2TXBTRFlxaXE1bEdYcm5IamdMdz0iLCJtYWMiOiIyMzdiZmZlM2U1MTE4ODhkNTEzNDkwY2Y5YTMyYjBmMDJjYWViYmI1MTI2OTkyZWE1OGRiYmRhZDE3M2U0ZjM4IiwidGFnIjoiIn0%3D
+#EXTINF:10.010000,
+/play/hls-nginx/03011b3b-fb1c-4387-8c74-a976e07a769b/03011b3b-fb1c-4387-8c74-a976e07a769b_1779705812.ts?token=eyJpdiI6Im5PSWl4enNUTi9PMnNaNEZqZHhlNnc9PSIsInZhbHVlIjoibmtGNXZLOEhZNXFReGFMcndyQUU1NWF4UkFBYk9TUGhTMjVsUU9kZncraXYweTMxS0JaNWYzdDJLL2VlYWhzcyIsIm1hYyI6IjJjMjY1ZjU5ZjRmMWY0ZDczODVjYTgyYzZkMDJjOTY5ODQzMjIxMDdjMzY1YjA4MjQzNjk5YjVkODgwMDg4NGEiLCJ0YWciOiIifQ%3D%3D&h=a0eb0012d741b27760613771b5428aab&r=5f89b7&rt=22b2c6e65045f7dfa3ab29b6c53f5741&s=3420660&lvtoken=eyJpdiI6InBVR0l6QmxTV3VkOTdkdHY0NlIzaUE9PSIsInZhbHVlIjoidjYraWJkSFl3NTA4R2hOYlgvc3FERGVnQzVodEpXUkFkNUExdXJlVFdQOENiZklDdy82RFU1YklON3RvR0Vsc3dnUU11NDFDOFpsTGxTWFE3Y1VnWCtqK1gwdlJQeHdDZFJvb1ZoSzhYbWI1dW5aUlZIWUkwTnE3Z1dxRGxEbE5kOEdoMnQzS25uSVROaktabEpyTER3RmkyRzJ5MCtKTG9yTFowOEt4M2JabDh1QlF6UnBQcWpxTS9VMURrM2haSXNDVEozTjc4U1RWRlhwc0NBTXZGTzZ2TXBTRFlxaXE1bEdYcm5IamdMdz0iLCJtYWMiOiIyMzdiZmZlM2U1MTE4ODhkNTEzNDkwY2Y5YTMyYjBmMDJjYWViYmI1MTI2OTkyZWE1OGRiYmRhZDE3M2U0ZjM4IiwidGFnIjoiIn0%3D
+#EXTINF:10.010000,
+/play/hls-nginx/03011b3b-fb1c-4387-8c74-a976e07a769b/03011b3b-fb1c-4387-8c74-a976e07a769b_1779705813.ts?token=eyJpdiI6Im5PSWl4enNUTi9PMnNaNEZqZHhlNnc9PSIsInZhbHVlIjoibmtGNXZLOEhZNXFReGFMcndyQUU1NWF4UkFBYk9TUGhTMjVsUU9kZncraXYweTMxS0JaNWYzdDJLL2VlYWhzcyIsIm1hYyI6IjJjMjY1ZjU5ZjRmMWY0ZDczODVjYTgyYzZkMDJjOTY5ODQzMjIxMDdjMzY1YjA4MjQzNjk5YjVkODgwMDg4NGEiLCJ0YWciOiIifQ%3D%3D&h=03477c4a9a2eeb6559a8203d82887503&r=5f89b7&rt=22b2c6e65045f7dfa3ab29b6c53f5741&s=3107640&lvtoken=eyJpdiI6InBVR0l6QmxTV3VkOTdkdHY0NlIzaUE9PSIsInZhbHVlIjoidjYraWJkSFl3NTA4R2hOYlgvc3FERGVnQzVodEpXUkFkNUExdXJlVFdQOENiZklDdy82RFU1YklON3RvR0Vsc3dnUU11NDFDOFpsTGxTWFE3Y1VnWCtqK1gwdlJQeHdDZFJvb1ZoSzhYbWI1dW5aUlZIWUkwTnE3Z1dxRGxEbE5kOEdoMnQzS25uSVROaktabEpyTER3RmkyRzJ5MCtKTG9yTFowOEt4M2JabDh1QlF6UnBQcWpxTS9VMURrM2haSXNDVEozTjc4U1RWRlhwc0NBTXZGTzZ2TXBTRFlxaXE1bEdYcm5IamdMdz0iLCJtYWMiOiIyMzdiZmZlM2U1MTE4ODhkNTEzNDkwY2Y5YTMyYjBmMDJjYWViYmI1MTI2OTkyZWE1OGRiYmRhZDE3M2U0ZjM4IiwidGFnIjoiIn0%3D
+
+
