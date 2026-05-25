@@ -1,7 +1,9 @@
 :host {
   display: block;
   height: 100dvh;
+  width: 100%;
   background: #000;
+  overflow: hidden;
 }
 
 main {
@@ -10,11 +12,10 @@ main {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 1rem;
   box-sizing: border-box;
 }
 
 .player-container {
   width: 100%;
-  max-width: 1200px;
+  height: 100%;
 }
