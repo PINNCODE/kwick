@@ -16,6 +16,11 @@ main {
 }
 
 .player-container {
+  position: relative;
   width: 100%;
   height: 100%;
+}
+
+app-stream-layer {
+  z-index: 10;
 }

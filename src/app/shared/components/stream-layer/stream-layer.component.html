@@ -1,0 +1,22 @@
+<div class="stream-layer">
+  <div class="layer">
+    <div class="layer-channel">
+      <img class="layer-channel__logo" src="https://futuretv.mx/logos/canales.v158645616521/mex.canal5.png" alt="channel-logo">
+      <p class="layer-channel__name">Channel Name</p>
+    </div>
+    <div class="layer-info">
+      <div class="card-info" *ngFor="let program of programs">
+        <div class="card-info-title">
+          <p>{{ program.label }}</p>
+          <p>{{ program.time }} - {{ program.end_time }}</p>
+        </div>
+        <div class="card-info-description" #descRef>
+          <p>{{ program.description }}</p>
+        </div>
+        <div class="card-info-timeline">
+          <div class="card-info-timeline-progress" [style.width.%]="getProgress(program.time, program.end_time)"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

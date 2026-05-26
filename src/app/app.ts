@@ -1,15 +1,15 @@
 import { Component, signal } from '@angular/core';
-import { StreamPlayerComponent, PlayerState, PlayerError } from './shared';
+import { StreamPlayerComponent, PlayerState, PlayerError, StreamLayerComponent } from './shared';
 
 @Component({
   selector: 'app-root',
-  imports: [StreamPlayerComponent],
+  imports: [StreamPlayerComponent, StreamLayerComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
 export class App {
   protected readonly title = signal('kwick');
-  protected readonly streamUrl = 'https://ftvpro.net:8443/live/Trujillo2303/SAFJC4xWVRp5/5.m3u8';
+  protected readonly streamUrl = 'https://ftvpro.net:8443/live/Trujillo2303/SAFJC4xWVRp5/319999.m3u8';
   protected readonly playerState = signal<PlayerState | ''>('');
   protected readonly errorMessage = signal('');
 

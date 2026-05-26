@@ -1,0 +1,110 @@
+.stream-layer {
+  position: fixed;
+  bottom: 32px;
+  left: 32px;
+  right: 32px;
+  z-index: 10;
+}
+
+.layer {
+  height: 240px;
+  width: 100%;
+  bottom: 0;
+  left: 0;
+  padding: 16px;
+}
+
+.layer-channel {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  &__logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    object-fit: cover;
+  }
+
+  &__name {
+    font-size: 44px;
+    font-weight: bold;
+    color: #fff;
+  }
+}
+
+.layer-info {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.card-info {
+  margin-top: 16px;
+  backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 20px;
+  min-width: 0;
+
+  &:first-child {
+    border-left: 4px solid #3b82f6;
+  }
+}
+
+.card-info-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.card-info-description {
+  margin-top: 8px;
+  color: #fff;
+  font-size: 24px;
+  font-weight: 500;
+  width: 100%;
+  overflow: hidden;
+
+  p {
+    display: inline-block;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &.scrolling {
+      white-space: nowrap;
+      animation: scroll-left 8s linear infinite;
+    }
+  }
+}
+
+.card-info-timeline {
+  margin-top: 12px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  overflow: hidden;
+
+  &-progress {
+    height: 100%;
+    background: #3b82f6;
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+}
+
+@keyframes scroll-left {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
