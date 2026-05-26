@@ -1,6 +1,6 @@
-import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, ViewChild, output, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild, signal } from '@angular/core';
 import { StreamPlayerComponent, StreamLayerComponent, PlayerState, PlayerError } from '../../shared';
+import { AuthServiceAdapter } from '../../../infrastructure/adapters/auth-service.adapter';
 
 @Component({
   selector: 'app-player',
@@ -9,15 +9,28 @@ import { StreamPlayerComponent, StreamLayerComponent, PlayerState, PlayerError }
   templateUrl: './player.component.html',
   styleUrl: './player.component.scss',
 })
-export class PlayerComponent implements OnDestroy {
+export class PlayerComponent implements OnInit, OnDestroy {
   @ViewChild(StreamPlayerComponent) player!: StreamPlayerComponent;
 
   private hideTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  protected readonly streamUrl = 'https://ftvpro.net:8443/live/Trujillo2303/SAFJC4xWVRp5/319999.m3u8';
+  protected readonly streamUrl = signal('');
   protected readonly playerState = signal<PlayerState | ''>('');
   protected readonly errorMessage = signal('');
   protected readonly streamLayerVisible = signal(true);
+
+  constructor(private readonly authService: AuthServiceAdapter) {}
+
+  ngOnInit(): void {
+    const creds = this.authService.getStreamCredentials();
+    console.log(creds);
+    if (creds) {
+      const { host, username, password } = creds;
+      const streamId = '319999'; // TODO: retrieve from stream list
+      console.log(`${host}/live/${username}/${password}/${streamId}.m3u8`);
+      this.streamUrl.set(`${host}/live/${username}/${password}/${streamId}.m3u8`);
+    }
+  }
 
   protected toggleStreamLayer(): void {
     this.streamLayerVisible.set(!this.streamLayerVisible());

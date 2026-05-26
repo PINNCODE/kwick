@@ -5,6 +5,11 @@ import { map, catchError } from 'rxjs/operators';
 import { IptvApiPort, AuthResult, Category, Stream, EPGListing, IptvApiException, ErrorCode } from '../../core';
 
 interface XtreamApiResponse {
+  user_info?: {
+    username: string;
+    status: string;
+    exp_date?: string;
+  };
   user?: {
     username: string;
     status: string;
@@ -46,7 +51,10 @@ export class XtreamHttpAdapter implements IptvApiPort {
   private readonly http = inject(HttpClient);
 
   login(username: string, password: string, host: string): Observable<AuthResult> {
-    const url = `${host}/panel_api.php?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
+    const url = this.buildUrl(host, '/player_api.php', {
+      username: encodeURIComponent(username),
+      password: encodeURIComponent(password),
+    });
 
     return this.http.get<XtreamApiResponse>(url).pipe(
       map((response) => this.mapAuthResult(response, username)),
@@ -60,7 +68,7 @@ export class XtreamHttpAdapter implements IptvApiPort {
   }
 
   getCategories(host: string, authToken: string): Observable<Category[]> {
-    const url = `${host}/panel_api.php?action=get_categories`;
+    const url = this.buildUrl(host, '/player_api.php', { action: 'get_categories' });
 
     return this.http.get<XtreamApiResponse>(url).pipe(
       map((response) =>
@@ -76,8 +84,8 @@ export class XtreamHttpAdapter implements IptvApiPort {
 
   getLivestreams(host: string, authToken: string, categoryId?: number): Observable<Stream[]> {
     const url = categoryId
-      ? `${host}/panel_api.php?action=get_live_streams&category_id=${categoryId}`
-      : `${host}/panel_api.php?action=get_live_streams`;
+      ? this.buildUrl(host, '/panel_api.php', { action: 'get_live_streams', category_id: categoryId.toString() })
+      : this.buildUrl(host, '/panel_api.php', { action: 'get_live_streams' });
 
     return this.http.get<XtreamApiResponse>(url).pipe(
       map((response) =>
@@ -94,7 +102,7 @@ export class XtreamHttpAdapter implements IptvApiPort {
   }
 
   getEPG(host: string, authToken: string, streamId: number, limit?: number): Observable<EPGListing[]> {
-    let url = `${host}/panel_api.php?action=get_short_epg&stream_id=${streamId}`;
+    let url = this.buildUrl(host, '/panel_api.php', { action: 'get_short_epg', stream_id: streamId.toString() });
     if (limit) {
       url += `&limit=${limit}`;
     }
@@ -117,13 +125,19 @@ export class XtreamHttpAdapter implements IptvApiPort {
     );
   }
 
+  private buildUrl(host: string, path: string, params: Record<string, string>): string {
+    const qs = new URLSearchParams(params).toString();
+    return `${path}?${qs}`;
+  }
+
   private mapAuthResult(response: XtreamApiResponse, username: string): AuthResult {
-    if (!response.user || !response.server_info) {
+    const user = response.user_info ?? response.user;
+    if (!user || !response.server_info) {
       throw new IptvApiException(ErrorCode.AUTH_FAILED, 'Invalid server response');
     }
 
     return {
-      user: { username: response.user.username },
+      user: { username: user.username },
       serverInfo: {
         url: response.server_info.url,
         port: response.server_info.port,
@@ -132,8 +146,8 @@ export class XtreamHttpAdapter implements IptvApiPort {
         rtmpPort: response.server_info.rtmp_port,
         timestamp: response.server_info.timestamp,
       },
-      authToken: `${response.user.username}:${Date.now()}`,
-      status: response.user.status as 'active' | 'expired' | 'disabled',
+      authToken: `${user.username}:${Date.now()}`,
+      status: user.status as 'active' | 'expired' | 'disabled',
     };
   }
 

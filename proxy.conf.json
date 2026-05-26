@@ -1,0 +1,8 @@
+{
+  "/player_api.php": {
+    "target": "https://ftvpro.net:8443",
+    "secure": true,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  }
+}
