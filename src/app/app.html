@@ -1,6 +1,7 @@
-<main>
+<main tabindex="0" (keydown.m)="toggleStreamLayer()">
   <div class="player-container">
     <app-stream-layer
+      [class.stream-layer-hidden]="!streamLayerVisible()"
       (togglePlayPause)="onTogglePlayPause()"
       (toggleMuteUnmute)="onToggleMute()"
       (volumeChange)="onVolumeChange($event)"
