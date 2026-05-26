@@ -1,0 +1,19 @@
+<main tabindex="0" (keydown.m)="toggleStreamLayer()">
+  <div class="player-container">
+    <app-stream-layer
+      [class.stream-layer-hidden]="!streamLayerVisible()"
+      (togglePlayPause)="onTogglePlayPause()"
+      (toggleMuteUnmute)="onToggleMute()"
+      (volumeChange)="onVolumeChange($event)"
+    ></app-stream-layer>
+    <app-stream-player
+      #streamPlayer
+      [streamUrl]="streamUrl"
+      [streamName]="'Channel 5'"
+      [muted]="false"
+      [controls]="false"
+      (playerState)="onPlayerState($event)"
+      (error)="onPlayerError($event)"
+    />
+  </div>
+</main>
