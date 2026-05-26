@@ -1,4 +1,5 @@
-import { Component, signal, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Component, OnDestroy, ViewChild, output, signal } from '@angular/core';
 import { StreamPlayerComponent, StreamLayerComponent, PlayerState, PlayerError } from '../../shared';
 
 @Component({
@@ -8,8 +9,10 @@ import { StreamPlayerComponent, StreamLayerComponent, PlayerState, PlayerError }
   templateUrl: './player.component.html',
   styleUrl: './player.component.scss',
 })
-export class PlayerComponent {
+export class PlayerComponent implements OnDestroy {
   @ViewChild(StreamPlayerComponent) player!: StreamPlayerComponent;
+
+  private hideTimeout: ReturnType<typeof setTimeout> | null = null;
 
   protected readonly streamUrl = 'https://ftvpro.net:8443/live/Trujillo2303/SAFJC4xWVRp5/319999.m3u8';
   protected readonly playerState = signal<PlayerState | ''>('');
@@ -18,6 +21,18 @@ export class PlayerComponent {
 
   protected toggleStreamLayer(): void {
     this.streamLayerVisible.set(!this.streamLayerVisible());
+    this.resetHideTimer();
+  }
+
+  private resetHideTimer(): void {
+    if (this.hideTimeout) {
+      clearTimeout(this.hideTimeout);
+    }
+    if (this.streamLayerVisible()) {
+      this.hideTimeout = setTimeout(() => {
+        this.streamLayerVisible.set(false);
+      }, 20_000);
+    }
   }
 
   protected onPlayerState(state: PlayerState): void {
@@ -42,5 +57,11 @@ export class PlayerComponent {
 
   protected onVolumeChange(volume: number): void {
     this.player?.setVolume(volume);
+  }
+
+  ngOnDestroy(): void {
+    if (this.hideTimeout) {
+      clearTimeout(this.hideTimeout);
+    }
   }
 }
