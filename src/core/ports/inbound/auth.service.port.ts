@@ -9,8 +9,8 @@ export interface LoginCredentials {
 }
 
 export interface AuthService {
-  login(credentials: LoginCredentials, masterPassword: string): Observable<AuthResult>;
-  restoreSession(masterPassword: string): Promise<boolean>;
+  login(credentials: LoginCredentials): Observable<AuthResult>;
+  restoreSession(): Promise<boolean>;
   getCurrentUser(): User | null;
   getCurrentAuthResult(): AuthResult | null;
   isAuthenticated(): boolean;

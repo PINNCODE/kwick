@@ -2,9 +2,7 @@ export interface CredentialRecord {
   id: string;
   host: string;
   username: string;
-  passwordCipher: string;
-  iv: string;
-  salt: string;
+  password: string;
 }
 
 export interface CredentialStoragePort {

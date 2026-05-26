@@ -1,0 +1,90 @@
+<div class="auth-container">
+  <div class="glow-overlay"></div>
+
+  <div class="auth-panel">
+    <div class="form-section">
+      <div class="logo-section">
+        <span class="material-symbols-outlined logo-icon">play_circle</span>
+        <h1 class="app-title">Kwick IPTV</h1>
+      </div>
+
+      <form [formGroup]="authForm" (ngSubmit)="onSubmit()" class="auth-form">
+      <div class="input-group">
+        <label for="host" class="input-label">Provider Host</label>
+        <input
+          type="url"
+          id="host"
+          formControlName="host"
+          class="input-field"
+          [class.input-error]="hasError('host')"
+          placeholder="https://example.com:8080"
+        />
+        @if (hasError('host')) {
+          <span class="error-text">Enter a valid URL (e.g., https://example.com:8080)</span>
+        }
+      </div>
+
+      <div class="input-group">
+        <label for="username" class="input-label">Username</label>
+        <input
+          type="text"
+          id="username"
+          formControlName="username"
+          class="input-field"
+          [class.input-error]="hasError('username')"
+          placeholder="Enter your username"
+        />
+        @if (hasError('username')) {
+          <span class="error-text">Username is required</span>
+        }
+      </div>
+
+      <div class="input-group">
+        <label for="password" class="input-label">Password</label>
+        <input
+          type="password"
+          id="password"
+          formControlName="password"
+          class="input-field"
+          [class.input-error]="hasError('password')"
+          placeholder="Enter your password"
+        />
+        @if (hasError('password')) {
+          <span class="error-text">Password is required</span>
+        }
+      </div>
+
+      <div class="checkbox-group">
+        <label class="checkbox-label">
+          <input type="checkbox" formControlName="rememberProvider" class="checkbox-input" />
+          <span class="checkbox-custom"></span>
+          <span class="checkbox-text">Remember Provider</span>
+        </label>
+      </div>
+
+      @if (errorMessage()) {
+        <div class="error-banner">
+          <span class="material-symbols-outlined error-icon">error</span>
+          <span>{{ errorMessage() }}</span>
+        </div>
+      }
+
+      <button type="submit" class="submit-button" [disabled]="isLoading()">
+        @if (isLoading()) {
+          <span class="spinner"></span>
+          <span>Connecting...</span>
+        } @else {
+          <span>Sign In</span>
+        }
+      </button>
+    </form>
+    </div>
+
+    <div class="qr-section">
+      <div class="qr-placeholder">
+        <span class="material-symbols-outlined qr-icon">qr_code_2</span>
+        <span class="qr-text">Scan to connect</span>
+      </div>
+    </div>
+  </div>
+</div>
