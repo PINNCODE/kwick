@@ -13,6 +13,7 @@ export interface PlayerError {
 export class StreamPlayerState {
   readonly state = signal<PlayerState>('idle');
   readonly error = signal<PlayerError | null>(null);
+  readonly volume = signal(1);
 
   setState(state: PlayerState): void {
     this.state.set(state);
@@ -23,8 +24,13 @@ export class StreamPlayerState {
     this.state.set('error');
   }
 
+  setVolume(vol: number): void {
+    this.volume.set(vol);
+  }
+
   reset(): void {
     this.state.set('idle');
     this.error.set(null);
+    this.volume.set(1);
   }
 }

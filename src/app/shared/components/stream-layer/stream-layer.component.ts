@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, AfterViewInit, QueryList, ViewChildren, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, ElementRef, AfterViewInit, QueryList, ViewChildren, OnDestroy, output, signal } from '@angular/core';
 
 @Component({
   selector: 'app-stream-layer',
@@ -8,23 +8,28 @@ import { Component, ElementRef, AfterViewInit, QueryList, ViewChildren, OnInit, 
   styleUrl: './stream-layer.component.scss',
   imports: [CommonModule],
 })
-export class StreamLayerComponent implements AfterViewInit, OnInit, OnDestroy {
+export class StreamLayerComponent implements AfterViewInit, OnDestroy {
   @ViewChildren('descRef') descRefs!: QueryList<ElementRef<HTMLElement>>;
-  private tickInterval?: ReturnType<typeof setInterval>;
+
+  readonly togglePlayPause = output<void>();
+  readonly toggleMuteUnmute = output<void>();
+  readonly volumeChange = output<number>();
+
+  isPlaying = true;
+  isMuted = false;
+  volume = 100;
+
+  onVolumeChange(event: Event): void {
+    const value = (event.target as HTMLInputElement).valueAsNumber;
+    this.volume = value;
+    this.volumeChange.emit(value / 100);
+  }
 
   programs = [
     { time: '17:00', end_time: '17:60', label: 'Ahora', description: 'Descripción del programa' },
     { time: '20:00', end_time: '22:00', label: 'Próximo', description: 'Siguiente programa' },
     { time: '22:00', end_time: '23:00', label: 'Más tarde', description: 'Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior' },
   ];
-
-  constructor(private cdr: ChangeDetectorRef) {}
-
-  ngOnInit() {
-    this.tickInterval = setInterval(() => {
-      this.cdr.detectChanges();
-    }, 60000);
-  }
 
   ngAfterViewInit() {
     this.descRefs.forEach((ref) => {
@@ -35,8 +40,16 @@ export class StreamLayerComponent implements AfterViewInit, OnInit, OnDestroy {
     });
   }
 
-  ngOnDestroy() {
-    if (this.tickInterval) clearInterval(this.tickInterval);
+  ngOnDestroy() {}
+
+  togglePlay() {
+    this.isPlaying = !this.isPlaying;
+    this.togglePlayPause.emit();
+  }
+
+  toggleMute() {
+    this.isMuted = !this.isMuted;
+    this.toggleMuteUnmute.emit();
   }
 
   getProgress(startTime: string, endTime: string): number {

@@ -32,6 +32,7 @@ export class StreamPlayerComponent implements OnInit, OnDestroy {
   readonly error = output<PlayerError>();
 
   private hls: Hls | null = null;
+  private videoEl: HTMLVideoElement | null = null;
 
   constructor(private readonly state: StreamPlayerState) {
     effect(() => {
@@ -52,6 +53,7 @@ export class StreamPlayerComponent implements OnInit, OnDestroy {
 
   ngAfterViewInit(): void {
     const video = this.videoRef.nativeElement;
+    this.videoEl = video;
 
     this.setupVideoEventListeners(video);
 
@@ -120,6 +122,44 @@ export class StreamPlayerComponent implements OnInit, OnDestroy {
     video.addEventListener('playing', () => {
       this.state.setState('playing');
     });
+
+    video.addEventListener('volumechange', () => {
+      this.state.setVolume(video.volume);
+    });
+  }
+
+  play(): void {
+    this.videoEl?.play();
+  }
+
+  pause(): void {
+    this.videoEl?.pause();
+  }
+
+  setVolume(volume: number): void {
+    if (this.videoEl) {
+      this.videoEl.volume = Math.max(0, Math.min(1, volume));
+    }
+  }
+
+  getVolume(): number {
+    return this.videoEl?.volume ?? 1;
+  }
+
+  isMuted(): boolean {
+    return this.videoEl?.muted ?? false;
+  }
+
+  mute(): void {
+    if (this.videoEl) {
+      this.videoEl.muted = true;
+    }
+  }
+
+  unmute(): void {
+    if (this.videoEl) {
+      this.videoEl.muted = false;
+    }
   }
 
   ngOnDestroy(): void {

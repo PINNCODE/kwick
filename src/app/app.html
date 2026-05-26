@@ -1,11 +1,15 @@
 <main>
   <div class="player-container">
-    <app-stream-layer></app-stream-layer>
+    <app-stream-layer
+      (togglePlayPause)="onTogglePlayPause()"
+      (toggleMuteUnmute)="onToggleMute()"
+      (volumeChange)="onVolumeChange($event)"
+    ></app-stream-layer>
     <app-stream-player
       [streamUrl]="streamUrl"
       [streamName]="'Channel 5'"
       [muted]="false"
-      [controls]="true"
+      [controls]="false"
       (playerState)="onPlayerState($event)"
       (error)="onPlayerError($event)"
     />
