@@ -68,16 +68,17 @@ export class XtreamHttpAdapter implements IptvApiPort {
   }
 
   getCategories(host: string, authToken: string): Observable<Category[]> {
-    const url = this.buildUrl(host, '/player_api.php', { action: 'get_categories' });
+    const url = this.buildUrl(host, '/player_api.php', { action: 'get_live_categories' }, authToken);
 
-    return this.http.get<XtreamApiResponse>(url).pipe(
-      map((response) =>
-        (response.categories ?? []).map((cat) => ({
+    return this.http.get(url).pipe(
+      map((response: any) => {
+        const cats = Array.isArray(response) ? response : Object.values(response);
+        return cats.map((cat: any) => ({
           id: Number(cat.category_id),
           name: cat.category_name,
           type: cat.category_type as 'live',
-        }))
-      ),
+        }));
+      }),
       catchError((err) => this.handleHttpError(err))
     );
   }
