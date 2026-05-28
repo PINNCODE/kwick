@@ -56,9 +56,16 @@ export class SearchService {
         catMap.set(cat.id, cat.name);
       }
       this.categoryMap.set(catMap);
-      console.log('[SearchService] categoryMap set with', catMap.size, 'entries. Sample:', catMap.get(103), catMap.get(107));
-      this.channelsCache.set(streams);
-      console.log('[SearchService] channels cached:', streams.length, 'sample categoryIds:', streams.slice(0, 5).map(s => s.categoryId));
+
+      // Deduplicate by stream id
+      const seen = new Set<number>();
+      const uniqueStreams = streams.filter((s) => {
+        if (seen.has(s.id)) return false;
+        seen.add(s.id);
+        return true;
+      });
+      this.channelsCache.set(uniqueStreams);
+      console.log('[SearchService] channels cached:', uniqueStreams.length, 'after deduplication');
     } finally {
       this.loading.set(false);
     }
