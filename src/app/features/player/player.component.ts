@@ -20,8 +20,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
   protected readonly streamUrl = signal('');
   protected readonly playerState = signal<PlayerState | ''>('');
   protected readonly errorMessage = signal('');
-  protected readonly streamLayerVisible = signal(true);
-  protected readonly menuLayerVisible = signal(false);
+  protected readonly activeLayer = signal<'stream' | 'menu' | null>('stream');
   protected readonly userInitial = signal('');
   protected readonly userName = signal('');
   protected readonly isPlaying = signal(true);
@@ -56,21 +55,31 @@ export class PlayerComponent implements OnInit, OnDestroy {
   }
 
   protected toggleStreamLayer(): void {
-    this.streamLayerVisible.set(!this.streamLayerVisible());
+    const current = this.activeLayer();
+    if (current === 'stream') {
+      this.activeLayer.set(null);
+    } else {
+      this.activeLayer.set('stream');
+    }
     this.resetHideTimer();
   }
 
   protected toggleMenuLayer(): void {
-    this.menuLayerVisible.set(!this.menuLayerVisible());
+    const current = this.activeLayer();
+    if (current === 'menu') {
+      this.activeLayer.set(null);
+    } else {
+      this.activeLayer.set('menu');
+    }
   }
 
   private resetHideTimer(): void {
     if (this.hideTimeout) {
       clearTimeout(this.hideTimeout);
     }
-    if (this.streamLayerVisible()) {
+    if (this.activeLayer() === 'stream') {
       this.hideTimeout = setTimeout(() => {
-        this.streamLayerVisible.set(false);
+        this.activeLayer.set(null);
       }, 20_000);
     }
   }
