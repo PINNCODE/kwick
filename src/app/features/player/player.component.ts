@@ -96,6 +96,14 @@ export class PlayerComponent implements OnInit, OnDestroy {
     this.player?.setVolume(volume);
   }
 
+  protected onChannelChange(streamId: number): void {
+    const streamCreds = this.authService.getStreamCredentials();
+    if (streamCreds) {
+      const { host, username, password } = streamCreds;
+      this.streamUrl.set(`${host}/live/${username}/${password}/${streamId}.m3u8`);
+    }
+  }
+
   ngOnDestroy(): void {
     if (this.hideTimeout) {
       clearTimeout(this.hideTimeout);

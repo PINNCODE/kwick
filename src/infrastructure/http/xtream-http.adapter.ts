@@ -83,26 +83,29 @@ export class XtreamHttpAdapter implements IptvApiPort {
   }
 
   getLivestreams(host: string, authToken: string, categoryId?: number): Observable<Stream[]> {
-    const url = categoryId
-      ? this.buildUrl(host, '/panel_api.php', { action: 'get_live_streams', category_id: categoryId.toString() })
-      : this.buildUrl(host, '/panel_api.php', { action: 'get_live_streams' });
+    const params: Record<string, string> = { action: 'get_live_streams' };
+    if (categoryId) {
+      params['category_id'] = categoryId.toString();
+    }
+    const url = this.buildUrl(host, '/player_api.php', params, authToken);
 
-    return this.http.get<XtreamApiResponse>(url).pipe(
-      map((response) =>
-        (response.livestreams ?? []).map((stream) => ({
+    return this.http.get(url).pipe(
+      map((response: any) => {
+        const streams = Object.values(response) as any[];
+        return streams.map((stream: any) => ({
           id: stream.stream_id,
           name: stream.name,
           categoryId: stream.category_id,
           type: stream.stream_type as 'live',
           thumbnail: stream.thumbnail,
-        }))
-      ),
+        }));
+      }),
       catchError((err) => this.handleHttpError(err))
     );
   }
 
   getEPG(host: string, authToken: string, streamId: number, limit?: number): Observable<EPGListing[]> {
-    let url = this.buildUrl(host, '/panel_api.php', { action: 'get_short_epg', stream_id: streamId.toString() });
+    let url = this.buildUrl(host, '/panel_api.php', { action: 'get_short_epg', stream_id: streamId.toString() }, authToken);
     if (limit) {
       url += `&limit=${limit}`;
     }
@@ -125,8 +128,16 @@ export class XtreamHttpAdapter implements IptvApiPort {
     );
   }
 
-  private buildUrl(host: string, path: string, params: Record<string, string>): string {
-    const qs = new URLSearchParams(params).toString();
+  private buildUrl(host: string, path: string, params: Record<string, string>, authToken?: string): string {
+    const credentials = authToken ? authToken.split(':') : [];
+    let qs: string;
+    if (credentials.length === 2) {
+      const credParams = new URLSearchParams({ username: credentials[0], password: credentials[1] });
+      const actionParams = new URLSearchParams(params);
+      qs = credParams.toString() + '&' + actionParams.toString();
+    } else {
+      qs = new URLSearchParams(params).toString();
+    }
     return `${path}?${qs}`;
   }
 

@@ -1,0 +1,34 @@
+<div class="search-container">
+  <div class="search-input-wrapper">
+    <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input
+      type="text"
+      class="search-input"
+      placeholder="Search channels..."
+      [value]="searchQuery()"
+      (input)="onSearchChange($event)"
+    />
+  </div>
+  <div class="channels-list">
+    @for (channel of filteredChannels(); track $index) {
+      <div class="channel-item" (click)="onChannelClick(channel)">
+        @if (channel.thumbnail) {
+          <img [src]="channel.thumbnail" [alt]="channel.name" class="channel-thumbnail" />
+        } @else {
+          <div class="channel-thumbnail placeholder">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="7" width="20" height="15" rx="2" ry="2"/>
+              <polyline points="17 2 12 7 7 2"/>
+            </svg>
+          </div>
+        }
+        <span class="channel-name">{{ channel.name }}</span>
+      </div>
+    } @empty {
+      <div class="no-results">No channels found</div>
+    }
+  </div>
+</div>

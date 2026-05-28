@@ -3,6 +3,7 @@
     <app-menu-layer
       [username]="userName()"
       [initial]="userInitial()"
+      (channelChangeRequested)="onChannelChange($event)"
     ></app-menu-layer>
     <app-stream-layer
       [class.stream-layer-hidden]="!streamLayerVisible()"
