@@ -6,4 +6,5 @@ export interface Stream {
   categoryId: number;
   type: StreamType;
   thumbnail?: string;
+  streamIcon?: string;
 }

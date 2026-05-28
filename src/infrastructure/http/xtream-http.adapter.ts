@@ -98,6 +98,7 @@ export class XtreamHttpAdapter implements IptvApiPort {
           categoryId: stream.category_id,
           type: stream.stream_type as 'live',
           thumbnail: stream.thumbnail,
+          streamIcon: stream.stream_icon,
         }));
       }),
       catchError((err) => this.handleHttpError(err))

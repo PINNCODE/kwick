@@ -15,7 +15,9 @@
   <div class="channels-list">
     @for (channel of filteredChannels(); track $index) {
       <div class="channel-item" (click)="onChannelClick(channel)">
-        @if (channel.thumbnail) {
+        @if (channel.streamIcon) {
+          <img [src]="channel.streamIcon" [alt]="channel.name" class="channel-thumbnail" />
+        } @else if (channel.thumbnail) {
           <img [src]="channel.thumbnail" [alt]="channel.name" class="channel-thumbnail" />
         } @else {
           <div class="channel-thumbnail placeholder">
