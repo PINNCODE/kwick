@@ -21,6 +21,11 @@ main {
   height: 100%;
 }
 
+app-menu-layer {
+  position: relative;
+  z-index: 11;
+}
+
 app-stream-layer {
   z-index: 10;
   transition: opacity 0.3s ease;

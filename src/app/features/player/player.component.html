@@ -1,5 +1,6 @@
 <main tabindex="0" (keydown.m)="toggleStreamLayer()">
   <div class="player-container">
+    <app-menu-layer></app-menu-layer>
     <app-stream-layer
       [class.stream-layer-hidden]="!streamLayerVisible()"
       (togglePlayPause)="onTogglePlayPause()"

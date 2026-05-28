@@ -1,11 +1,12 @@
 import { Component, OnDestroy, OnInit, ViewChild, signal } from '@angular/core';
 import { StreamPlayerComponent, StreamLayerComponent, PlayerState, PlayerError } from '../../shared';
 import { AuthServiceAdapter } from '../../../infrastructure/adapters/auth-service.adapter';
+import { MenuLayerComponent } from '../../shared/components/menu-layer/menu-layer.component';
 
 @Component({
   selector: 'app-player',
   standalone: true,
-  imports: [StreamPlayerComponent, StreamLayerComponent],
+  imports: [StreamPlayerComponent, StreamLayerComponent, MenuLayerComponent],
   templateUrl: './player.component.html',
   styleUrl: './player.component.scss',
 })
