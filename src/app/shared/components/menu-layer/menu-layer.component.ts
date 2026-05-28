@@ -12,6 +12,7 @@ import { SearchLayerComponent } from '../../../features/search';
 export class MenuLayerComponent {
   readonly username = input('');
   readonly initial = input('');
+  readonly visible = input(true);
 
   private readonly searchService = inject(SearchService);
 
@@ -20,6 +21,7 @@ export class MenuLayerComponent {
   readonly channels = this.searchService.getChannels();
   readonly isLoading = this.searchService.isLoading();
   readonly showSearch = computed(() => this.activePanel() === 'search');
+  readonly isVisible = computed(() => this.activePanel() !== null);
 
   readonly channelChangeRequested = output<number>();
 

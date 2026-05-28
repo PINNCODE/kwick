@@ -24,6 +24,12 @@ main {
 app-menu-layer {
   position: relative;
   z-index: 11;
+  transition: opacity 0.3s ease;
+
+  &.menu-layer-hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
 }
 
 app-stream-layer {

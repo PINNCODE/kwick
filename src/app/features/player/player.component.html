@@ -1,6 +1,7 @@
-<main tabindex="0" (keydown.m)="toggleStreamLayer()">
+<main tabindex="0" (keydown.m)="toggleStreamLayer()" (keydown.b)="toggleMenuLayer()">
   <div class="player-container">
     <app-menu-layer
+      [class.menu-layer-hidden]="!menuLayerVisible()"
       [username]="userName()"
       [initial]="userInitial()"
       (channelChangeRequested)="onChannelChange($event)"

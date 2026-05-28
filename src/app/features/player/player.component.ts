@@ -21,6 +21,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
   protected readonly playerState = signal<PlayerState | ''>('');
   protected readonly errorMessage = signal('');
   protected readonly streamLayerVisible = signal(true);
+  protected readonly menuLayerVisible = signal(false);
   protected readonly userInitial = signal('');
   protected readonly userName = signal('');
   protected readonly isPlaying = signal(true);
@@ -57,6 +58,10 @@ export class PlayerComponent implements OnInit, OnDestroy {
   protected toggleStreamLayer(): void {
     this.streamLayerVisible.set(!this.streamLayerVisible());
     this.resetHideTimer();
+  }
+
+  protected toggleMenuLayer(): void {
+    this.menuLayerVisible.set(!this.menuLayerVisible());
   }
 
   private resetHideTimer(): void {
