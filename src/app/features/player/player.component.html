@@ -1,4 +1,4 @@
-<main tabindex="0" (keydown.m)="toggleStreamLayer()" (keydown.b)="toggleMenuLayer()">
+<main tabindex="0" (keydown.arrowLeft)="toggleMenuLayer()" (keydown.m)="toggleStreamLayer()">
   <div class="player-container">
     <app-menu-layer
       [class.layer-hidden]="activeLayer() !== 'menu'"
