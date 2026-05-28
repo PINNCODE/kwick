@@ -1,54 +1,42 @@
+import { Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, AfterViewInit, QueryList, ViewChildren, OnDestroy, output, signal } from '@angular/core';
+
+export interface StreamProgram {
+  time: string;
+  endTime: string;
+  label: string;
+  description: string;
+}
 
 @Component({
   selector: 'app-stream-layer',
   standalone: true,
+  imports: [CommonModule],
   templateUrl: './stream-layer.component.html',
   styleUrl: './stream-layer.component.scss',
-  imports: [CommonModule],
 })
-export class StreamLayerComponent implements AfterViewInit, OnDestroy {
-  @ViewChildren('descRef') descRefs!: QueryList<ElementRef<HTMLElement>>;
+export class StreamLayerComponent {
+  readonly isPlaying = input(true);
+  readonly isMuted = input(false);
+  readonly volume = input(100);
+  readonly channelLogo = input('https://futuretv.mx/logos/canales.v158645616521/mex.canal5.png');
+  readonly channelName = input('Channel Name');
+  readonly programs = input<StreamProgram[]>([]);
 
   readonly togglePlayPause = output<void>();
   readonly toggleMuteUnmute = output<void>();
   readonly volumeChange = output<number>();
 
-  isPlaying = true;
-  isMuted = false;
-  volume = 100;
-
   onVolumeChange(event: Event): void {
     const value = (event.target as HTMLInputElement).valueAsNumber;
-    this.volume = value;
     this.volumeChange.emit(value / 100);
   }
 
-  programs = [
-    { time: '17:00', end_time: '17:60', label: 'Ahora', description: 'Descripción del programa' },
-    { time: '20:00', end_time: '22:00', label: 'Próximo', description: 'Siguiente programa' },
-    { time: '22:00', end_time: '23:00', label: 'Más tarde', description: 'Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior Programa posterior' },
-  ];
-
-  ngAfterViewInit() {
-    this.descRefs.forEach((ref) => {
-      const text = ref.nativeElement.querySelector('p');
-      if (text && text.scrollWidth > text.clientWidth) {
-        text.classList.add('scrolling');
-      }
-    });
-  }
-
-  ngOnDestroy() {}
-
-  togglePlay() {
-    this.isPlaying = !this.isPlaying;
+  togglePlay(): void {
     this.togglePlayPause.emit();
   }
 
-  toggleMute() {
-    this.isMuted = !this.isMuted;
+  toggleMute(): void {
     this.toggleMuteUnmute.emit();
   }
 

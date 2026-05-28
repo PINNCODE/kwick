@@ -1,1 +1,1 @@
-export { StreamLayerComponent } from './stream-layer.component';
+export { StreamLayerComponent, type StreamProgram } from './stream-layer.component';

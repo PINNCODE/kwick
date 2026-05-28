@@ -8,14 +8,12 @@ import {
   ViewChild,
   effect,
 } from '@angular/core';
-import Hls from 'hls.js';
-import { ErrorCode } from '../../../../core';
-import { StreamPlayerState, PlayerState, PlayerError } from '../../state/stream-player.state';
+import { HlsPlayerService } from '../../state/hls-player.service';
+import { PlayerState, PlayerError } from '../../state/stream-player.state';
 
 @Component({
   selector: 'app-stream-player',
   standalone: true,
-  providers: [StreamPlayerState],
   templateUrl: './stream-player.component.html',
   styleUrl: './stream-player.component.scss',
 })
@@ -29,142 +27,95 @@ export class StreamPlayerComponent implements OnInit, OnDestroy {
   readonly controls = input(true);
 
   readonly playerState = output<PlayerState>();
-  readonly error = output<PlayerError>();
+  readonly errorOccurred = output<PlayerError>();
 
-  private hls: Hls | null = null;
-  private videoEl: HTMLVideoElement | null = null;
+  private readonly player = new HlsPlayerService();
+  private _stateInterval: ReturnType<typeof setInterval> | null = null;
+  private _errorCheckInterval: ReturnType<typeof setInterval> | null = null;
+  private _videoAttached = false;
 
-  constructor(private readonly state: StreamPlayerState) {
+  constructor() {
+    // React to streamUrl changes after video is attached
     effect(() => {
-      this.playerState.emit(this.state.state());
+      const url = this.streamUrl();
+      if (url && this._videoAttached) {
+        this.player.load(url, this.thumbnail());
+      }
     });
 
+    // React to muted input changes
     effect(() => {
-      const err = this.state.error();
-      if (err) {
-        this.error.emit(err);
+      const muted = this.muted();
+      if (this._videoAttached) {
+        if (muted) {
+          this.player.mute();
+        } else {
+          this.player.unmute();
+        }
       }
     });
   }
 
   ngOnInit(): void {
-    this.state.setState('loading');
+    // Poll state changes
+    this._stateInterval = setInterval(() => {
+      const state = this.player.state();
+      if (state !== 'idle') {
+        this.playerState.emit(state);
+      }
+    }, 100);
+
+    // Poll errors
+    this._errorCheckInterval = setInterval(() => {
+      const err = this.player.error();
+      if (err) {
+        this.errorOccurred.emit(err);
+      }
+    }, 100);
   }
 
   ngAfterViewInit(): void {
-    const video = this.videoRef.nativeElement;
-    this.videoEl = video;
-
-    this.setupVideoEventListeners(video);
-
-    if (Hls.isSupported()) {
-      this.hls = new Hls();
-      this.hls.loadSource(this.streamUrl());
-      this.hls.attachMedia(video);
-
-      this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        video.play().catch(() => {
-            this.state.setState('waiting');
-          });
-      });
-
-      this.hls.on(Hls.Events.FRAG_BUFFERED, () => {
-        this.state.setState('playing');
-      });
-
-      this.hls.on(Hls.Events.BUFFER_APPENDING, () => {
-        this.state.setState('waiting');
-      });
-
-      this.hls.on(Hls.Events.ERROR, (_event, data) => {
-        const correlationId = crypto.randomUUID();
-        const playerError: PlayerError = {
-          code: ErrorCode.PLAYER_ERROR,
-          message: data.details || 'HLS playback error',
-          correlationId,
-        };
-        this.state.setError(playerError);
-      });
-
-      this.hls.on(Hls.Events.MEDIA_ATTACHED, () => {
-        video.poster = this.thumbnail() || '';
-      });
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = this.streamUrl();
-      video.addEventListener('loadedmetadata', () => {
-        this.state.setState('playing');
-        video.play().catch(() => {
-          this.state.setState('waiting');
-        });
-      });
-    } else {
-      this.state.setError({
-        code: ErrorCode.PLAYER_ERROR,
-        message: 'HLS is not supported in this browser',
-        correlationId: crypto.randomUUID(),
-      });
+    if (this.videoRef) {
+      this.player.attachVideo(this.videoRef.nativeElement);
+      this._videoAttached = true;
+      const url = this.streamUrl();
+      if (url) {
+        this.player.load(url, this.thumbnail());
+      }
     }
-  }
-
-  private setupVideoEventListeners(video: HTMLVideoElement): void {
-    video.addEventListener('play', () => {
-      this.state.setState('playing');
-    });
-
-    video.addEventListener('pause', () => {
-      this.state.setState('paused');
-    });
-
-    video.addEventListener('waiting', () => {
-      this.state.setState('waiting');
-    });
-
-    video.addEventListener('playing', () => {
-      this.state.setState('playing');
-    });
-
-    video.addEventListener('volumechange', () => {
-      this.state.setVolume(video.volume);
-    });
   }
 
   play(): void {
-    this.videoEl?.play();
+    this.player.play();
   }
 
   pause(): void {
-    this.videoEl?.pause();
+    this.player.pause();
   }
 
   setVolume(volume: number): void {
-    if (this.videoEl) {
-      this.videoEl.volume = Math.max(0, Math.min(1, volume));
-    }
+    this.player.setVolume(volume);
   }
 
   getVolume(): number {
-    return this.videoEl?.volume ?? 1;
+    return this.player.getVolume();
   }
 
   isMuted(): boolean {
-    return this.videoEl?.muted ?? false;
+    return this.player.isMuted();
   }
 
   mute(): void {
-    if (this.videoEl) {
-      this.videoEl.muted = true;
-    }
+    this.player.mute();
   }
 
   unmute(): void {
-    if (this.videoEl) {
-      this.videoEl.muted = false;
-    }
+    this.player.unmute();
   }
 
   ngOnDestroy(): void {
-    this.hls?.destroy();
-    this.hls = null;
-    this.state.reset();
+    if (this._stateInterval) clearInterval(this._stateInterval);
+    if (this._errorCheckInterval) clearInterval(this._errorCheckInterval);
+    this.player.reset();
   }
 }

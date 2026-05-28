@@ -1,8 +1,15 @@
 <main tabindex="0" (keydown.m)="toggleStreamLayer()">
   <div class="player-container">
-    <app-menu-layer></app-menu-layer>
+    <app-menu-layer
+      [username]="userName()"
+      [initial]="userInitial()"
+    ></app-menu-layer>
     <app-stream-layer
       [class.stream-layer-hidden]="!streamLayerVisible()"
+      [isPlaying]="isPlaying()"
+      [isMuted]="isMuted()"
+      [volume]="volume()"
+      [programs]="programs()"
       (togglePlayPause)="onTogglePlayPause()"
       (toggleMuteUnmute)="onToggleMute()"
       (volumeChange)="onVolumeChange($event)"
@@ -14,7 +21,7 @@
       [muted]="false"
       [controls]="false"
       (playerState)="onPlayerState($event)"
-      (error)="onPlayerError($event)"
+      (errorOccurred)="onPlayerError($event)"
     />
   </div>
 </main>
