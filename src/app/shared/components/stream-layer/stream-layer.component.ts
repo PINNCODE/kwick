@@ -47,7 +47,7 @@ export class StreamLayerComponent {
 
     const startMinutes = startHour * 60 + startMin;
     const endMinutes = endHour * 60 + endMin;
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const currentMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
 
     if (currentMinutes < startMinutes) return 0;
     if (currentMinutes >= endMinutes) return 100;

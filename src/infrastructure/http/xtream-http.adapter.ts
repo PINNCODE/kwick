@@ -37,12 +37,13 @@ interface XtreamApiResponse {
     thumbnail?: string;
   }>;
   epg_listings?: Array<{
-    id: number;
-    channel_id: number;
+    id: string | number;
+    channel_id: string | number;
     title: string;
     description: string;
-    start_timestamp: number;
-    end_timestamp: number;
+    start_timestamp: string | number;
+    stop_timestamp?: string | number;
+    end_timestamp?: string | number;
   }>;
 }
 
@@ -107,24 +108,28 @@ export class XtreamHttpAdapter implements IptvApiPort {
   }
 
   getEPG(host: string, authToken: string, streamId: number, limit?: number): Observable<EPGListing[]> {
-    let url = this.buildUrl(host, '/panel_api.php', { action: 'get_short_epg', stream_id: streamId.toString() }, authToken);
+    let url = this.buildUrl(host, '/player_api.php', { action: 'get_short_epg', stream_id: streamId.toString() }, authToken);
     if (limit) {
       url += `&limit=${limit}`;
     }
 
     return this.http.get<XtreamApiResponse>(url).pipe(
       map((response) => {
-        const epgData = (response as unknown as { epg_listings?: EPGListing[] }).epg_listings ?? [];
-        return epgData.map((item) => ({
-          id: item.id,
-          channelId: item.channelId,
-          title: item.title,
-          description: item.description,
-          startTime: new Date(item.startTimestamp * 1000),
-          endTime: new Date(item.endTimestamp * 1000),
-          startTimestamp: item.startTimestamp,
-          endTimestamp: item.endTimestamp,
-        }));
+        const epgData = response?.epg_listings ?? [];
+        return epgData.map((item) => {
+          const startTs = Number(item.start_timestamp);
+          const stopTs = Number(item.stop_timestamp || item.end_timestamp);
+          return {
+            id: Number(item.id),
+            channelId: isNaN(Number(item.channel_id)) ? 0 : Number(item.channel_id),
+            title: item.title,
+            description: item.description,
+            startTime: new Date(startTs * 1000),
+            endTime: new Date(stopTs * 1000),
+            startTimestamp: startTs,
+            endTimestamp: stopTs,
+          };
+        });
       }),
       catchError((err) => this.handleHttpError(err))
     );

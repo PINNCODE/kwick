@@ -1,6 +1,7 @@
 import { Component, input, signal, inject, computed, output } from '@angular/core';
 import { SearchService } from '../../../core/application/search.service';
 import { SearchLayerComponent } from '../../../features/search';
+import { Stream } from '../../../../core/domain/entities/stream.entity';
 
 @Component({
   selector: 'app-menu-layer',
@@ -23,7 +24,7 @@ export class MenuLayerComponent {
   readonly showSearch = computed(() => this.activePanel() === 'search');
   readonly isVisible = computed(() => this.activePanel() !== null);
 
-  readonly channelChangeRequested = output<number>();
+  readonly channelChangeRequested = output<Stream>();
 
   toggleSearch(): void {
     if (this.activePanel() === 'search') {
@@ -34,7 +35,7 @@ export class MenuLayerComponent {
     }
   }
 
-  onChannelSelected(channel: { id: number; name: string; categoryId: number; type: 'live'; thumbnail?: string }): void {
-    this.channelChangeRequested.emit(channel.id);
+  onChannelSelected(channel: Stream): void {
+    this.channelChangeRequested.emit(channel);
   }
 }

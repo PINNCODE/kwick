@@ -1,9 +1,12 @@
-import { Component, OnDestroy, OnInit, ViewChild, signal, Inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild, signal, Inject, computed, inject } from '@angular/core';
 import { StreamPlayerComponent, StreamLayerComponent, StreamProgram, PlayerState, PlayerError } from '../../shared';
 import { AuthServiceAdapter } from '../../../infrastructure/adapters/auth-service.adapter';
 import { MenuLayerComponent } from '../../shared/components/menu-layer/menu-layer.component';
 import { CredentialStoragePort } from '../../../core/ports/outbound/credential-storage.port';
 import { CREDENTIAL_STORAGE_PORT } from '../../../core/ports/outbound/tokens';
+import { SearchService } from '../../core/application/search.service';
+import { EpgService } from '../../core/application/epg.service';
+import { Stream } from '../../../core/domain/entities/stream.entity';
 
 @Component({
   selector: 'app-player',
@@ -26,15 +29,35 @@ export class PlayerComponent implements OnInit, OnDestroy {
   protected readonly isPlaying = signal(true);
   protected readonly isMuted = signal(false);
   protected readonly volume = signal(100);
-  protected readonly programs = signal<StreamProgram[]>([
-    { time: '17:00', endTime: '17:60', label: 'Ahora', description: 'Descripción del programa' },
-    { time: '20:00', endTime: '22:00', label: 'Próximo', description: 'Siguiente programa' },
-    { time: '22:00', endTime: '23:00', label: 'Más tarde', description: 'Programa posterior' },
-  ]);
+  protected readonly channelName = signal('Canal 5');
+  protected readonly channelLogo = signal('https://futuretv.mx/logos/canales.v158645616521/mex.canal5.png');
+  protected readonly programs = signal<StreamProgram[]>([]);
+  protected readonly currentChannelId = signal<number | null>(null);
+
+  private readonly searchService = inject(SearchService);
+  private readonly allChannels = this.searchService.getChannels();
+
+  protected readonly currentCategoryChannels = computed<Stream[]>(() => {
+    const channels = this.allChannels();
+    const activeId = this.currentChannelId();
+    if (!channels.length || activeId === null) {
+      return [];
+    }
+
+    const currentChannel = channels.find(c => c.id === activeId);
+    if (!currentChannel) {
+      return [];
+    }
+
+    const catId = currentChannel.categoryId;
+    const categoryChannels = channels.filter(c => c.categoryId === catId);
+    return [...categoryChannels].sort((a, b) => a.name.localeCompare(b.name));
+  });
 
   constructor(
     private readonly authService: AuthServiceAdapter,
     @Inject(CREDENTIAL_STORAGE_PORT) private readonly credentialStorage: CredentialStoragePort,
+    private readonly epgService: EpgService,
   ) {}
 
   async ngOnInit(): Promise<void> {
@@ -44,13 +67,26 @@ export class PlayerComponent implements OnInit, OnDestroy {
       this.userInitial.set(creds.username.charAt(0).toUpperCase());
     }
 
+    const savedChannelName = localStorage.getItem('kwick_last_channel_name') || 'Canal 5';
+    const savedChannelLogo = localStorage.getItem('kwick_last_channel_logo') || 'https://futuretv.mx/logos/canales.v158645616521/mex.canal5.png';
+    this.channelName.set(savedChannelName);
+    this.channelLogo.set(savedChannelLogo);
+
     const streamCreds = this.authService.getStreamCredentials();
     if (streamCreds) {
       const { host, username, password } = streamCreds;
       const savedStreamId = localStorage.getItem('kwick_last_channel_id');
-      const streamId = savedStreamId || '319999';
+      const streamId = savedStreamId ? parseInt(savedStreamId, 10) : 319999;
+      this.currentChannelId.set(streamId);
       this.streamUrl.set(`${host}/live/${username}/${password}/${streamId}.m3u8`);
+      
+      this.fetchEpgForChannel(streamId);
     }
+
+    // Prefetch channels and categories in the background so switching is ready
+    this.searchService.fetchChannels().catch((err) => {
+      console.error('[PlayerComponent] Error prefetching channels/categories:', err);
+    });
 
     this.resetHideTimer();
   }
@@ -111,13 +147,134 @@ export class PlayerComponent implements OnInit, OnDestroy {
     this.player?.setVolume(volume);
   }
 
-  protected onChannelChange(streamId: number): void {
+  protected onChannelChange(channel: Stream): void {
     const streamCreds = this.authService.getStreamCredentials();
     if (streamCreds) {
       const { host, username, password } = streamCreds;
+      const streamId = channel.id;
+      this.currentChannelId.set(streamId);
       this.streamUrl.set(`${host}/live/${username}/${password}/${streamId}.m3u8`);
       localStorage.setItem('kwick_last_channel_id', streamId.toString());
+
+      const name = channel.name;
+      const logo = channel.streamIcon || channel.thumbnail || 'https://futuretv.mx/logos/canales.v158645616521/mex.canal5.png';
+      this.channelName.set(name);
+      this.channelLogo.set(logo);
+      localStorage.setItem('kwick_last_channel_name', name);
+      localStorage.setItem('kwick_last_channel_logo', logo);
+
+      this.fetchEpgForChannel(streamId);
     }
+  }
+
+  private fetchEpgForChannel(streamId: number): void {
+    this.epgService.getEPG(streamId).subscribe({
+      next: (epgListings) => {
+        if (!epgListings || epgListings.length === 0) {
+          this.programs.set([]);
+          return;
+        }
+
+        const now = Date.now();
+        const futurePrograms = epgListings.filter(listing => {
+          return new Date(listing.endTime).getTime() > now;
+        });
+
+        if (futurePrograms.length === 0) {
+          this.programs.set([]);
+          return;
+        }
+
+        const formatTime = (d: Date) => {
+          const date = new Date(d);
+          const hours = String(date.getUTCHours()).padStart(2, '0');
+          const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+          return `${hours}:${minutes}`;
+        };
+
+        const mapped: StreamProgram[] = futurePrograms.slice(0, 3).map((listing, index) => {
+          let timeLabel = '';
+          if (index === 0) timeLabel = 'Ahora';
+          else if (index === 1) timeLabel = 'Próximo';
+          else if (index === 2) timeLabel = 'Más tarde';
+
+          const label = timeLabel ? `${timeLabel}: ${listing.title}` : listing.title;
+
+          let description = listing.description;
+          const cleanDesc = description.trim().toLowerCase();
+          if (!cleanDesc || 
+              cleanDesc === 'no description info' || 
+              cleanDesc === 'no description' || 
+              cleanDesc === 'no description.') {
+            description = this.channelName();
+          }
+
+          return {
+            time: formatTime(listing.startTime),
+            endTime: formatTime(listing.endTime),
+            label,
+            description,
+          };
+        });
+
+        this.programs.set(mapped);
+      },
+      error: (err) => {
+        console.error('[PlayerComponent] Error fetching EPG:', err);
+        this.programs.set([]);
+      }
+    });
+  }
+
+  protected onArrowUp(event: Event): void {
+    if (this.activeLayer() === 'menu') {
+      return;
+    }
+    event.preventDefault();
+
+    const channels = this.currentCategoryChannels();
+    if (!channels.length) {
+      return;
+    }
+
+    const activeId = this.currentChannelId();
+    const currentIndex = channels.findIndex((c) => c.id === activeId);
+    if (currentIndex === -1) {
+      return;
+    }
+
+    const prevIndex = (currentIndex - 1 + channels.length) % channels.length;
+    const nextChannel = channels[prevIndex];
+    this.onChannelChange(nextChannel);
+    this.showStreamLayerBriefly();
+  }
+
+  protected onArrowDown(event: Event): void {
+    if (this.activeLayer() === 'menu') {
+      return;
+    }
+    event.preventDefault();
+
+    const channels = this.currentCategoryChannels();
+    if (!channels.length) {
+      return;
+    }
+
+    const activeId = this.currentChannelId();
+    const currentIndex = channels.findIndex((c) => c.id === activeId);
+    if (currentIndex === -1) {
+      return;
+    }
+
+    const nextIndex = (currentIndex + 1) % channels.length;
+    const nextChannel = channels[nextIndex];
+    this.onChannelChange(nextChannel);
+    this.showStreamLayerBriefly();
+  }
+
+  private showStreamLayerBriefly(): void {
+    this.activeLayer.set('stream');
+    this.resetHideTimer();
   }
 
   ngOnDestroy(): void {

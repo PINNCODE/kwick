@@ -1,4 +1,4 @@
-<main tabindex="0" (keydown.arrowLeft)="toggleMenuLayer()" (keydown.enter)="toggleStreamLayer()">
+<main tabindex="0" (keydown.arrowLeft)="toggleMenuLayer()" (keydown.enter)="toggleStreamLayer()" (keydown.arrowUp)="onArrowUp($event)" (keydown.arrowDown)="onArrowDown($event)">
   <div class="player-container">
     <app-menu-layer
       [class.layer-hidden]="activeLayer() !== 'menu'"
@@ -12,6 +12,8 @@
       [isMuted]="isMuted()"
       [volume]="volume()"
       [programs]="programs()"
+      [channelName]="channelName()"
+      [channelLogo]="channelLogo()"
       (togglePlayPause)="onTogglePlayPause()"
       (toggleMuteUnmute)="onToggleMute()"
       (volumeChange)="onVolumeChange($event)"
@@ -19,7 +21,7 @@
     <app-stream-player
       #streamPlayer
       [streamUrl]="streamUrl()"
-      [streamName]="'Channel 5'"
+      [streamName]="channelName()"
       [muted]="false"
       [controls]="false"
       (playerState)="onPlayerState($event)"
