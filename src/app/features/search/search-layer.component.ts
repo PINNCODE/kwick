@@ -56,6 +56,10 @@ export class SearchLayerComponent {
     this.searchQuery.set((event.target as HTMLInputElement).value);
   }
 
+  clearSearch(): void {
+    this.searchQuery.set('');
+  }
+
   onChannelClick(channel: Stream): void {
     this.channelSelected.emit(channel);
   }

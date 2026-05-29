@@ -47,7 +47,8 @@ export class PlayerComponent implements OnInit, OnDestroy {
     const streamCreds = this.authService.getStreamCredentials();
     if (streamCreds) {
       const { host, username, password } = streamCreds;
-      const streamId = '319999';
+      const savedStreamId = localStorage.getItem('kwick_last_channel_id');
+      const streamId = savedStreamId || '319999';
       this.streamUrl.set(`${host}/live/${username}/${password}/${streamId}.m3u8`);
     }
 
@@ -115,6 +116,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
     if (streamCreds) {
       const { host, username, password } = streamCreds;
       this.streamUrl.set(`${host}/live/${username}/${password}/${streamId}.m3u8`);
+      localStorage.setItem('kwick_last_channel_id', streamId.toString());
     }
   }
 
