@@ -117,7 +117,8 @@
   border-radius: 15px;
   padding: 16px;
   display: flex;
-  justify-content: space-between;
+  width: fit-content;
+  gap: 32px;
   align-items: center;
 
   &-left {
