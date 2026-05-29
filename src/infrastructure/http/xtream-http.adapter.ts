@@ -94,9 +94,9 @@ export class XtreamHttpAdapter implements IptvApiPort {
       map((response: any) => {
         const streams = Object.values(response) as any[];
         return streams.map((stream: any) => ({
-          id: stream.stream_id,
+          id: Number(stream.stream_id),
           name: stream.name,
-          categoryId: stream.category_id,
+          categoryId: Number(stream.category_id),
           type: stream.stream_type as 'live',
           thumbnail: stream.thumbnail,
           streamIcon: stream.stream_icon,

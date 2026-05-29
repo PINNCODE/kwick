@@ -36,20 +36,25 @@ export class SearchLayerComponent {
         )
       : allChannels;
 
-    const grouped = new Map<string, Stream[]>(); // cambiamos a string
+    const grouped = new Map<number, Stream[]>();
     for (const channel of filtered) {
-      const list = grouped.get(channel.name) ?? [];
+      const catId = Number(channel.categoryId);
+      const list = grouped.get(catId) ?? [];
       list.push(channel);
-      grouped.set(channel.name, list);
+      grouped.set(catId, list);
     }
 
     return Array.from(grouped.entries())
-      .sort(([a], [b]) => a.localeCompare(b)) // ahora ordenamos por nombre
-      .map(([categoryName, channels]) => ({
-        categoryName,
-        categoryId: -1, // colocamos -1
-        channels,
-      }));
+      .map(([categoryId, channels]) => {
+        const categoryName = this.searchService.getCategoryName(categoryId);
+        const sortedChannels = [...channels].sort((a, b) => a.name.localeCompare(b.name));
+        return {
+          categoryId,
+          categoryName,
+          channels: sortedChannels,
+        };
+      })
+      .sort((a, b) => a.categoryName.localeCompare(b.categoryName));
   });
 
   onSearchChange(event: Event): void {

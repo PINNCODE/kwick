@@ -21,7 +21,7 @@
     }
   </div>
   <div class="channels-list">
-    @for (group of filteredGroupedChannels(); track group.categoryName) {
+    @for (group of filteredGroupedChannels(); track group.categoryId) {
       <div class="category-header">{{ group.categoryName }}</div>
       @for (channel of group.channels; track $index) {
         <div class="channel-item" (click)="onChannelClick(channel)">

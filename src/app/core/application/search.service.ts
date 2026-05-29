@@ -17,7 +17,7 @@ export class SearchService {
   }
 
   getCategoryName(categoryId: number): string {
-    return this.categoryMap().get(categoryId) ?? `Category ${categoryId}`;
+    return this.categoryMap().get(Number(categoryId)) ?? `Category ${categoryId}`;
   }
 
   isLoading() {
