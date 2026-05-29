@@ -77,6 +77,11 @@ export class PlayerComponent implements OnInit, OnDestroy {
     this.channelName.set(savedChannelName);
     this.channelLogo.set(savedChannelLogo);
 
+    const savedVolume = localStorage.getItem('kwick_last_volume');
+    if (savedVolume !== null) {
+      this.volume.set(parseFloat(savedVolume));
+    }
+
     const streamCreds = this.authService.getStreamCredentials();
     if (streamCreds) {
       const { host, username, password } = streamCreds;
@@ -197,7 +202,9 @@ export class PlayerComponent implements OnInit, OnDestroy {
   }
 
   protected onVolumeChange(volume: number): void {
-    this.player?.setVolume(volume);
+    const volPercent = Math.round(volume * 100);
+    this.volume.set(volPercent);
+    localStorage.setItem('kwick_last_volume', volPercent.toString());
   }
 
   protected onChannelChange(channel: Stream): void {

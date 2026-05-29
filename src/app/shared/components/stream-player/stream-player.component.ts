@@ -25,6 +25,7 @@ export class StreamPlayerComponent implements OnInit, OnDestroy {
   readonly thumbnail = input<string>();
   readonly muted = input(false);
   readonly controls = input(true);
+  readonly volume = input(1.0);
 
   readonly playerState = output<PlayerState>();
   readonly errorOccurred = output<PlayerError>();
@@ -53,6 +54,14 @@ export class StreamPlayerComponent implements OnInit, OnDestroy {
         } else {
           this.player.unmute();
         }
+      }
+    });
+
+    // React to volume input changes
+    effect(() => {
+      const vol = this.volume();
+      if (this._videoAttached) {
+        this.player.setVolume(vol);
       }
     });
   }
