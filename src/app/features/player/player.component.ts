@@ -201,7 +201,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
           else if (index === 1) timeLabel = 'Próximo';
           else if (index === 2) timeLabel = 'Más tarde';
 
-          const label = timeLabel ? `${timeLabel}: ${listing.title}` : listing.title;
+          const label = timeLabel || '';
 
           let description = listing.description;
           const cleanDesc = description.trim().toLowerCase();
@@ -216,6 +216,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
             time: formatTime(listing.startTime),
             endTime: formatTime(listing.endTime),
             label,
+            title: listing.title,
             description,
           };
         });

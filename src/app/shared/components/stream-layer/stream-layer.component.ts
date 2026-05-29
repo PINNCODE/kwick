@@ -5,6 +5,7 @@ export interface StreamProgram {
   time: string;
   endTime: string;
   label: string;
+  title: string;
   description: string;
 }
 

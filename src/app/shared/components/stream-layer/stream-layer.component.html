@@ -11,7 +11,7 @@
           <p>{{ program.time }} - {{ program.endTime }}</p>
         </div>
         <div class="card-info-description" #descRef>
-          <p>{{ program.label || program.description }}</p>
+          <p>{{ program.title }}</p>
         </div>
         <div class="card-info-timeline">
           <div class="card-info-timeline-progress" [style.width.%]="getProgress(program.time, program.endTime)"></div>
