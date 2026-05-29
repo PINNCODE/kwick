@@ -144,9 +144,21 @@ export class PlayerComponent implements OnInit, OnDestroy {
   }
 
   protected onPlayerError(error: PlayerError): void {
+    const errorMsg = error.message?.toLowerCase() || '';
     this.errorMessage.set(`Error: ${error.message} (${error.correlationId})`);
     
     if (this.hasFailedCompletely()) {
+      return;
+    }
+
+    const isDirectFailure = errorMsg.includes('stream is down') || errorMsg.includes('503');
+    if (isDirectFailure) {
+      if (this.retryTimeout) {
+        clearTimeout(this.retryTimeout);
+        this.retryTimeout = null;
+      }
+      this.isRetrying.set(false);
+      this.hasFailedCompletely.set(true);
       return;
     }
 
