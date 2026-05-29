@@ -3,20 +3,7 @@
     <div class="layer-channel">
       <img class="layer-channel__logo" [src]="channelLogo()" alt="channel-logo">
       <p class="layer-channel__name">{{ channelName() }}</p>
-    </div>
-    <div class="layer-info" *ngIf="programs() && programs().length > 0">
-      <div class="card-info" *ngFor="let program of programs()">
-        <div class="card-info-title">
-          <p>{{ program.label }}</p>
-          <p>{{ program.time }} - {{ program.endTime }}</p>
-        </div>
-        <div class="card-info-description" #descRef>
-          <p>{{ program.title }}</p>
-        </div>
-        <div class="card-info-timeline">
-          <div class="card-info-timeline-progress" [style.width.%]="getProgress(program.time, program.endTime)"></div>
-        </div>
-      </div>
+      <span class="live-badge">EN VIVO</span>
     </div>
     <div class="layer-controls">
       <div class="layer-controls-left">
@@ -43,8 +30,19 @@
             [style.--progress]="volume() + '%'" (input)="onVolumeChange($event)" />
         </div>
       </div>
-      <div class="layer-controls-right">
-        <span class="live-badge">EN VIVO</span>
+    </div>
+    <div class="layer-info" *ngIf="programs() && programs().length > 0">
+      <div class="card-info" *ngFor="let program of programs()">
+        <div class="card-info-title">
+          <p>{{ program.label }}</p>
+          <p>{{ program.time }} - {{ program.endTime }}</p>
+        </div>
+        <div class="card-info-description" #descRef>
+          <p>{{ program.title }}</p>
+        </div>
+        <div class="card-info-timeline">
+          <div class="card-info-timeline-progress" [style.width.%]="getProgress(program.time, program.endTime)"></div>
+        </div>
       </div>
     </div>
   </div>
