@@ -47,7 +47,15 @@ export class StreamLayerComponent {
 
     const startMinutes = startHour * 60 + startMin;
     const endMinutes = endHour * 60 + endMin;
-    const currentMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+
+    const timeStr = now.toLocaleTimeString('es-MX', {
+      timeZone: 'America/Mexico_City',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+    const [currentHour, currentMin] = timeStr.split(':').map(Number);
+    const currentMinutes = currentHour * 60 + currentMin;
 
     if (currentMinutes < startMinutes) return 0;
     if (currentMinutes >= endMinutes) return 100;

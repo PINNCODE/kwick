@@ -187,9 +187,12 @@ export class PlayerComponent implements OnInit, OnDestroy {
 
         const formatTime = (d: Date) => {
           const date = new Date(d);
-          const hours = String(date.getUTCHours()).padStart(2, '0');
-          const minutes = String(date.getUTCMinutes()).padStart(2, '0');
-          return `${hours}:${minutes}`;
+          return date.toLocaleTimeString('es-MX', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+            timeZone: 'America/Mexico_City',
+          });
         };
 
         const mapped: StreamProgram[] = futurePrograms.slice(0, 3).map((listing, index) => {
