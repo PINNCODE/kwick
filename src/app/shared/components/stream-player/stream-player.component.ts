@@ -33,6 +33,7 @@ export class StreamPlayerComponent implements OnInit, OnDestroy {
   private _stateInterval: ReturnType<typeof setInterval> | null = null;
   private _errorCheckInterval: ReturnType<typeof setInterval> | null = null;
   private _videoAttached = false;
+  private _lastEmittedErrorId: string | null = null;
 
   constructor() {
     // React to streamUrl changes after video is attached
@@ -65,11 +66,16 @@ export class StreamPlayerComponent implements OnInit, OnDestroy {
       }
     }, 100);
 
-    // Poll errors
+    // Poll errors and only emit unique new errors
     this._errorCheckInterval = setInterval(() => {
       const err = this.player.error();
       if (err) {
-        this.errorOccurred.emit(err);
+        if (err.correlationId !== this._lastEmittedErrorId) {
+          this._lastEmittedErrorId = err.correlationId;
+          this.errorOccurred.emit(err);
+        }
+      } else {
+        this._lastEmittedErrorId = null;
       }
     }, 100);
   }
@@ -91,6 +97,13 @@ export class StreamPlayerComponent implements OnInit, OnDestroy {
 
   pause(): void {
     this.player.pause();
+  }
+
+  reload(): void {
+    const url = this.streamUrl();
+    if (url && this._videoAttached) {
+      this.player.load(url, this.thumbnail());
+    }
   }
 
   setVolume(volume: number): void {

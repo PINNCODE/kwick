@@ -19,6 +19,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
   @ViewChild(StreamPlayerComponent) player!: StreamPlayerComponent;
 
   private hideTimeout: ReturnType<typeof setTimeout> | null = null;
+  private retryTimeout: ReturnType<typeof setTimeout> | null = null;
 
   protected readonly streamUrl = signal('');
   protected readonly playerState = signal<PlayerState | ''>('');
@@ -33,6 +34,10 @@ export class PlayerComponent implements OnInit, OnDestroy {
   protected readonly channelLogo = signal('https://futuretv.mx/logos/canales.v158645616521/mex.canal5.png');
   protected readonly programs = signal<StreamProgram[]>([]);
   protected readonly currentChannelId = signal<number | null>(null);
+
+  protected readonly retryCount = signal(0);
+  protected readonly isRetrying = signal(false);
+  protected readonly hasFailedCompletely = signal(false);
 
   private readonly searchService = inject(SearchService);
   private readonly allChannels = this.searchService.getChannels();
@@ -123,10 +128,46 @@ export class PlayerComponent implements OnInit, OnDestroy {
 
   protected onPlayerState(state: PlayerState): void {
     this.playerState.set(state);
+    if (state === 'playing') {
+      this.resetRetryState();
+    }
+  }
+
+  private resetRetryState(): void {
+    if (this.retryTimeout) {
+      clearTimeout(this.retryTimeout);
+      this.retryTimeout = null;
+    }
+    this.retryCount.set(0);
+    this.isRetrying.set(false);
+    this.hasFailedCompletely.set(false);
   }
 
   protected onPlayerError(error: PlayerError): void {
     this.errorMessage.set(`Error: ${error.message} (${error.correlationId})`);
+    
+    if (this.hasFailedCompletely()) {
+      return;
+    }
+
+    if (this.retryTimeout) {
+      clearTimeout(this.retryTimeout);
+    }
+
+    const nextCount = this.retryCount() + 1;
+    this.retryCount.set(nextCount);
+
+    if (nextCount <= 3) {
+      this.isRetrying.set(true);
+      this.retryTimeout = setTimeout(() => {
+        if (this.player) {
+          this.player.reload();
+        }
+      }, 2500);
+    } else {
+      this.isRetrying.set(false);
+      this.hasFailedCompletely.set(true);
+    }
   }
 
   protected onTogglePlayPause(): void {
@@ -148,6 +189,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
   }
 
   protected onChannelChange(channel: Stream): void {
+    this.resetRetryState();
     const streamCreds = this.authService.getStreamCredentials();
     if (streamCreds) {
       const { host, username, password } = streamCreds;
@@ -165,6 +207,20 @@ export class PlayerComponent implements OnInit, OnDestroy {
 
       this.fetchEpgForChannel(streamId);
     }
+  }
+
+  protected onNextChannel(): void {
+    const channels = this.currentCategoryChannels();
+    if (!channels.length) {
+      return;
+    }
+
+    const activeId = this.currentChannelId();
+    const currentIndex = channels.findIndex((c) => c.id === activeId);
+    const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % channels.length;
+    const nextChannel = channels[nextIndex];
+    this.onChannelChange(nextChannel);
+    this.showStreamLayerBriefly();
   }
 
   private fetchEpgForChannel(streamId: number): void {
@@ -284,6 +340,9 @@ export class PlayerComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     if (this.hideTimeout) {
       clearTimeout(this.hideTimeout);
+    }
+    if (this.retryTimeout) {
+      clearTimeout(this.retryTimeout);
     }
   }
 }

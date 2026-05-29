@@ -22,6 +22,7 @@ export class HlsPlayerService {
 
     this.cleanup();
     this.state.set('loading');
+    this.error.set(null);
 
     if (Hls.isSupported()) {
       this.hls = new Hls();

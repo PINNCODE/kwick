@@ -27,5 +27,31 @@
       (playerState)="onPlayerState($event)"
       (errorOccurred)="onPlayerError($event)"
     />
+
+    @if (isRetrying() || hasFailedCompletely()) {
+      <div class="player-overlay">
+        <div class="glass-card">
+          @if (isRetrying()) {
+            <div class="loading-state">
+              <span class="spinner-premium"></span>
+              <h3>Intentando volver a cargar</h3>
+              <p>Problema de conexión temporal. Intento {{ retryCount() }} de 3...</p>
+            </div>
+          } @else if (hasFailedCompletely()) {
+            <div class="error-state">
+              <div class="warning-icon-wrapper">
+                <span class="warning-icon">⚠️</span>
+              </div>
+              <h3>Señal no disponible</h3>
+              <p>No se pudo reproducir el canal. Te recomendamos contactar a tu proveedor de IPTV.</p>
+              <button class="btn-next-channel" (click)="onNextChannel()">
+                <span>Siguiente canal</span>
+                <span class="btn-icon">→</span>
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    }
   </div>
 </main>
