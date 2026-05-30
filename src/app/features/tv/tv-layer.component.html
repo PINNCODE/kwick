@@ -1,0 +1,137 @@
+<div class="tv-container">
+  @if (isLoadingChannels()) {
+    <div class="loading-state">
+      <span class="spinner-premium"></span>
+      <h3>Cargando guía de canales...</h3>
+    </div>
+  } @else {
+    <!-- COL 1: CATEGORIES -->
+    <div class="column categories-column" [class.active]="activeColumn() === 'categories'">
+      <div class="column-header">
+        <h2>Categorías</h2>
+        <span class="badge">{{ categories().length }}</span>
+      </div>
+      <div class="scrollable-list">
+        @for (category of categories(); track category.id; let idx = $index) {
+          <div
+            class="list-item category-item"
+            [class.focused]="idx === selectedCategoryIndex() && activeColumn() === 'categories'"
+            [class.selected]="idx === selectedCategoryIndex()"
+            (click)="onCategorySelect(idx)"
+          >
+            <span class="bullet"></span>
+            <span class="item-name">{{ category.name }}</span>
+            <svg class="chevron-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- COL 2: CHANNELS -->
+    <div class="column channels-column" [class.active]="activeColumn() === 'channels'">
+      <div class="column-header">
+        <h2>Canales</h2>
+        <span class="badge">{{ currentCategoryChannels().length }}</span>
+      </div>
+      <div class="scrollable-list">
+        @for (channel of currentCategoryChannels(); track channel.id; let idx = $index) {
+          <div
+            class="list-item channel-item"
+            [class.focused]="idx === selectedChannelIndex() && activeColumn() === 'channels'"
+            [class.selected]="idx === selectedChannelIndex() && activeColumn() !== 'channels'"
+            (click)="onChannelSelect(idx)"
+            (dblclick)="onChannelDoubleClick(channel)"
+          >
+            @if (channel.streamIcon) {
+              <img [src]="channel.streamIcon" [alt]="channel.name" class="channel-logo" loading="lazy" />
+            } @else if (channel.thumbnail) {
+              <img [src]="channel.thumbnail" [alt]="channel.name" class="channel-logo" loading="lazy" />
+            } @else {
+              <div class="channel-logo placeholder">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="7" width="20" height="15" rx="2" ry="2"/>
+                  <polyline points="17 2 12 7 7 2"/>
+                </svg>
+              </div>
+            }
+            <div class="channel-info">
+              <span class="channel-number">#{{ idx + 1 }}</span>
+              <span class="item-name">{{ channel.name }}</span>
+            </div>
+          </div>
+        } @empty {
+          <div class="empty-state">
+            <p>No hay canales en esta categoría</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- COL 3: EPG -->
+    <div class="column epg-column">
+      <div class="column-header">
+        <h2>Guía de Programación</h2>
+      </div>
+
+      <div class="epg-content-wrapper">
+        @if (epgLoading()) {
+          <div class="epg-loading">
+            <span class="spinner-small"></span>
+            <p>Cargando guía...</p>
+          </div>
+        } @else if (selectedChannel(); as channel) {
+          <div class="channel-preview-card">
+            <div class="preview-header">
+              @if (channel.streamIcon || channel.thumbnail) {
+                <img [src]="channel.streamIcon || channel.thumbnail" [alt]="channel.name" class="preview-logo" />
+              }
+              <div class="preview-title">
+                <h3>{{ channel.name }}</h3>
+                <span class="live-tag">EN VIVO</span>
+              </div>
+            </div>
+
+            <div class="epg-listings">
+              @for (program of epgPrograms(); track $index) {
+                <div class="epg-program-item" [class.current]="program.label === 'Ahora'">
+                  <div class="program-meta">
+                    <span class="program-badge" [class.live]="program.label === 'Ahora'">
+                      {{ program.label }}
+                    </span>
+                    <span class="program-time">{{ program.time }} - {{ program.endTime }}</span>
+                  </div>
+                  <h4 class="program-title">{{ program.title }}</h4>
+                  <p class="program-desc">{{ program.description }}</p>
+
+                  @if (program.progress !== undefined) {
+                    <div class="progress-bar-container">
+                      <div class="progress-bar-fill" [style.width.%]="program.progress"></div>
+                    </div>
+                  }
+                </div>
+              } @empty {
+                <div class="epg-empty-card">
+                  <div class="info-icon-wrapper">
+                    <svg class="info-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="16" x2="12" y2="12"></line>
+                      <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                  </div>
+                  <h4>Guía no disponible</h4>
+                  <p>No se encontró información de programación para este canal en este momento.</p>
+                </div>
+              }
+            </div>
+          </div>
+        } @else {
+          <div class="epg-empty-card">
+            <p>Selecciona un canal para ver su guía</p>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

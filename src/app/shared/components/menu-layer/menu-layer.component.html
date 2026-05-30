@@ -17,7 +17,7 @@
           </svg>
         </button>
         <div class="divider"></div>
-        <button class="icon-btn">
+        <button class="icon-btn" [class.active]="activePanel() === 'tv'" (click)="toggleTv()">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="2" y="7" width="20" height="15" rx="2" ry="2"/>
             <polyline points="17 2 12 7 7 2"/>
@@ -36,6 +36,11 @@
         [channels]="channels()"
         (channelSelected)="onChannelSelected($event)"
       ></app-search-layer>
+    }
+    @if (showTv()) {
+      <app-tv-layer
+        (channelSelected)="onChannelSelected($event)"
+      ></app-tv-layer>
     }
   </div>
 </div>

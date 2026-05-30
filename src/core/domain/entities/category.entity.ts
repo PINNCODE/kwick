@@ -1,7 +1,7 @@
 export type CategoryType = 'live';
 
 export interface Category {
-  id: number;
+  id: number | string;
   name: string;
   type: CategoryType;
 }

@@ -7,6 +7,6 @@ import { EPGListing } from '../../domain/entities/epg-listing.entity';
 export interface IptvApiPort {
   login(username: string, password: string, host: string): Observable<AuthResult>;
   getCategories(host: string, authToken: string): Observable<Category[]>;
-  getLivestreams(host: string, authToken: string, categoryId?: number): Observable<Stream[]>;
+  getLivestreams(host: string, authToken: string, categoryId?: number | string): Observable<Stream[]>;
   getEPG(host: string, authToken: string, streamId: number, limit?: number): Observable<EPGListing[]>;
 }

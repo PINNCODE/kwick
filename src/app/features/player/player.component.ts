@@ -225,6 +225,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
       localStorage.setItem('kwick_last_channel_logo', logo);
 
       this.fetchEpgForChannel(streamId);
+      this.showStreamLayerBriefly();
     }
   }
 

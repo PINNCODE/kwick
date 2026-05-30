@@ -75,7 +75,7 @@ export class XtreamHttpAdapter implements IptvApiPort {
       map((response: any) => {
         const cats = Array.isArray(response) ? response : Object.values(response);
         return cats.map((cat: any) => ({
-          id: Number(cat.category_id),
+          id: String(cat.category_id),
           name: cat.category_name,
           type: cat.category_type as 'live',
         }));
@@ -84,7 +84,7 @@ export class XtreamHttpAdapter implements IptvApiPort {
     );
   }
 
-  getLivestreams(host: string, authToken: string, categoryId?: number): Observable<Stream[]> {
+  getLivestreams(host: string, authToken: string, categoryId?: number | string): Observable<Stream[]> {
     const params: Record<string, string> = { action: 'get_live_streams' };
     if (categoryId) {
       params['category_id'] = categoryId.toString();
@@ -97,7 +97,7 @@ export class XtreamHttpAdapter implements IptvApiPort {
         return streams.map((stream: any) => ({
           id: Number(stream.stream_id),
           name: stream.name,
-          categoryId: Number(stream.category_id),
+          categoryId: String(stream.category_id),
           type: stream.stream_type as 'live',
           thumbnail: stream.thumbnail,
           streamIcon: stream.stream_icon,

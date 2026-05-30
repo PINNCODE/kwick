@@ -1,12 +1,13 @@
 import { Component, input, signal, inject, computed, output } from '@angular/core';
 import { SearchService } from '../../../core/application/search.service';
 import { SearchLayerComponent } from '../../../features/search';
+import { TvLayerComponent } from '../../../features/tv';
 import { Stream } from '../../../../core/domain/entities/stream.entity';
 
 @Component({
   selector: 'app-menu-layer',
   standalone: true,
-  imports: [SearchLayerComponent],
+  imports: [SearchLayerComponent, TvLayerComponent],
   templateUrl: './menu-layer.component.html',
   styleUrl: './menu-layer.component.scss'
 })
@@ -22,6 +23,7 @@ export class MenuLayerComponent {
   readonly channels = this.searchService.getChannels();
   readonly isLoading = this.searchService.isLoading();
   readonly showSearch = computed(() => this.activePanel() === 'search');
+  readonly showTv = computed(() => this.activePanel() === 'tv');
   readonly isVisible = computed(() => this.activePanel() !== null);
 
   readonly channelChangeRequested = output<Stream>();
@@ -31,6 +33,15 @@ export class MenuLayerComponent {
       this.activePanel.set(null);
     } else {
       this.activePanel.set('search');
+      this.searchService.fetchChannels();
+    }
+  }
+
+  toggleTv(): void {
+    if (this.activePanel() === 'tv') {
+      this.activePanel.set(null);
+    } else {
+      this.activePanel.set('tv');
       this.searchService.fetchChannels();
     }
   }
