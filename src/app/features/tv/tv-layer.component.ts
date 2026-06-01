@@ -1,10 +1,9 @@
-import { Component, OnInit, OnDestroy, HostListener, signal, computed, inject, output, effect, ElementRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, signal, computed, inject, output, effect, ElementRef, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { SearchService } from '../../core/application/search.service';
-import { EpgService } from '../../core/application/epg.service';
+import { TvLayerService, EpgProgram } from './tv-layer.service';
 import { Stream } from '../../../core/domain/entities/stream.entity';
-import { StreamProgram } from '../../shared';
 
 @Component({
   selector: 'app-tv-layer',
@@ -19,7 +18,7 @@ import { StreamProgram } from '../../shared';
 })
 export class TvLayerComponent implements OnInit, OnDestroy {
   private readonly searchService = inject(SearchService);
-  private readonly epgService = inject(EpgService);
+  private readonly tvLayerService = inject(TvLayerService);
   private readonly el = inject(ElementRef);
 
   readonly channelSelected = output<Stream>();
@@ -31,9 +30,9 @@ export class TvLayerComponent implements OnInit, OnDestroy {
   readonly allChannels = this.searchService.getChannels();
   readonly isLoadingChannels = this.searchService.isLoading();
 
-  private currentEpgSubscription: Subscription | null = null;
-  readonly epgPrograms = signal<any[]>([]);
-  readonly epgLoading = signal(false);
+  // Expose EPG state from service
+  readonly epgPrograms = this.tvLayerService.epgPrograms;
+  readonly epgLoading = this.tvLayerService.epgLoading;
 
   readonly categories = this.searchService.categories;
 
@@ -46,7 +45,7 @@ export class TvLayerComponent implements OnInit, OnDestroy {
   readonly currentCategoryChannels = computed(() => {
     const activeCategory = this.selectedCategory();
     if (!activeCategory) return [];
-    
+
     const channels = this.allChannels();
     return channels
       .filter(ch => String(ch.categoryId) === String(activeCategory.id))
@@ -77,7 +76,7 @@ export class TvLayerComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.searchService.fetchChannels().then(() => {
-      this.fetchEpgForSelectedChannel();
+      this.tvLayerService.fetchEpgForChannel(this.selectedChannel());
       setTimeout(() => {
         this.el.nativeElement.focus();
       }, 100);
@@ -98,20 +97,20 @@ export class TvLayerComponent implements OnInit, OnDestroy {
         const nextIndex = (this.selectedCategoryIndex() + 1) % categoriesList.length;
         this.selectedCategoryIndex.set(nextIndex);
         this.selectedChannelIndex.set(0);
-        this.fetchEpgForSelectedChannel();
+        this.tvLayerService.fetchEpgForChannel(this.selectedChannel());
       } else if (event.key === 'ArrowUp') {
         event.preventDefault();
         event.stopPropagation();
         const prevIndex = (this.selectedCategoryIndex() - 1 + categoriesList.length) % categoriesList.length;
         this.selectedCategoryIndex.set(prevIndex);
         this.selectedChannelIndex.set(0);
-        this.fetchEpgForSelectedChannel();
+        this.tvLayerService.fetchEpgForChannel(this.selectedChannel());
       } else if (event.key === 'ArrowRight') {
         event.preventDefault();
         event.stopPropagation();
         if (channelsList.length > 0) {
           this.activeColumn.set('channels');
-          this.fetchEpgForSelectedChannel();
+          this.tvLayerService.fetchEpgForChannel(this.selectedChannel());
         }
       }
     } else if (this.activeColumn() === 'channels') {
@@ -122,13 +121,13 @@ export class TvLayerComponent implements OnInit, OnDestroy {
         event.stopPropagation();
         const nextIndex = (this.selectedChannelIndex() + 1) % channelsList.length;
         this.selectedChannelIndex.set(nextIndex);
-        this.fetchEpgForSelectedChannel();
+        this.tvLayerService.fetchEpgForChannel(this.selectedChannel());
       } else if (event.key === 'ArrowUp') {
         event.preventDefault();
         event.stopPropagation();
         const prevIndex = (this.selectedChannelIndex() - 1 + channelsList.length) % channelsList.length;
         this.selectedChannelIndex.set(prevIndex);
-        this.fetchEpgForSelectedChannel();
+        this.tvLayerService.fetchEpgForChannel(this.selectedChannel());
       } else if (event.key === 'ArrowLeft') {
         event.preventDefault();
         event.stopPropagation();
@@ -144,103 +143,17 @@ export class TvLayerComponent implements OnInit, OnDestroy {
     }
   }
 
-  fetchEpgForSelectedChannel(): void {
-    if (this.currentEpgSubscription) {
-      this.currentEpgSubscription.unsubscribe();
-      this.currentEpgSubscription = null;
-    }
-
-    const channel = this.selectedChannel();
-    if (!channel) {
-      this.epgPrograms.set([]);
-      return;
-    }
-
-    this.epgLoading.set(true);
-    this.currentEpgSubscription = this.epgService.getEPG(channel.id).subscribe({
-      next: (epgListings) => {
-        this.epgLoading.set(false);
-        if (!epgListings || epgListings.length === 0) {
-          this.epgPrograms.set([]);
-          return;
-        }
-
-        const now = Date.now();
-        const futurePrograms = epgListings.filter(listing => {
-          return new Date(listing.endTime).getTime() > now;
-        });
-
-        if (futurePrograms.length === 0) {
-          this.epgPrograms.set([]);
-          return;
-        }
-
-        const formatTime = (d: Date) => {
-          const date = new Date(d);
-          return date.toLocaleTimeString('es-MX', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
-            timeZone: 'America/Mexico_City',
-          });
-        };
-
-        const mapped = futurePrograms.slice(0, 3).map((listing, index) => {
-          let timeLabel = '';
-          if (index === 0) timeLabel = 'Ahora';
-          else if (index === 1) timeLabel = 'Próximo';
-          else if (index === 2) timeLabel = 'Más tarde';
-
-          let description = listing.description || '';
-          const cleanDesc = description.trim().toLowerCase();
-          if (!cleanDesc || 
-              cleanDesc === 'no description info' || 
-              cleanDesc === 'no description' || 
-              cleanDesc === 'no description.') {
-            description = channel.name;
-          }
-
-          let progress = 0;
-          if (index === 0) {
-            const start = new Date(listing.startTime).getTime();
-            const end = new Date(listing.endTime).getTime();
-            const total = end - start;
-            if (total > 0) {
-              progress = Math.max(0, Math.min(100, ((now - start) / total) * 100));
-            }
-          }
-
-          return {
-            time: formatTime(listing.startTime),
-            endTime: formatTime(listing.endTime),
-            label: timeLabel,
-            title: listing.title,
-            description,
-            progress: index === 0 ? progress : undefined
-          };
-        });
-
-        this.epgPrograms.set(mapped);
-      },
-      error: (err) => {
-        console.error('[TvLayerComponent] Error fetching EPG:', err);
-        this.epgLoading.set(false);
-        this.epgPrograms.set([]);
-      }
-    });
-  }
-
   onCategorySelect(index: number): void {
     this.selectedCategoryIndex.set(index);
     this.selectedChannelIndex.set(0);
     this.activeColumn.set('categories');
-    this.fetchEpgForSelectedChannel();
+    this.tvLayerService.fetchEpgForChannel(this.selectedChannel());
   }
 
   onChannelSelect(index: number): void {
     this.selectedChannelIndex.set(index);
     this.activeColumn.set('channels');
-    this.fetchEpgForSelectedChannel();
+    this.tvLayerService.fetchEpgForChannel(this.selectedChannel());
   }
 
   onChannelDoubleClick(channel: Stream): void {
@@ -248,8 +161,6 @@ export class TvLayerComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.currentEpgSubscription) {
-      this.currentEpgSubscription.unsubscribe();
-    }
+    this.tvLayerService.cancelEpgSubscription();
   }
 }

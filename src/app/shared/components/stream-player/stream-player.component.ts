@@ -123,6 +123,14 @@ export class StreamPlayerComponent implements OnInit, OnDestroy {
     return this.player.getVolume();
   }
 
+  getPlayerState(): PlayerState {
+    return this.player.state();
+  }
+
+  getPlayerError(): PlayerError | null {
+    return this.player.error();
+  }
+
   isMuted(): boolean {
     return this.player.isMuted();
   }

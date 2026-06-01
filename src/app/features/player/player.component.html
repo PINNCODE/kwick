@@ -18,10 +18,11 @@
       (toggleMuteUnmute)="onToggleMute()"
       (volumeChange)="onVolumeChange($event)"
     ></app-stream-layer>
-    <app-stream-player
+    <app-stream-controller
       #streamPlayer
       [streamUrl]="streamUrl()"
       [streamName]="channelName()"
+      [thumbnail]="channelLogo()"
       [muted]="false"
       [controls]="false"
       [volume]="volume() / 100"

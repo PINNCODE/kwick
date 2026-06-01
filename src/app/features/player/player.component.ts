@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit, ViewChild, signal, Inject, computed, inject } from '@angular/core';
-import { StreamPlayerComponent, StreamLayerComponent, StreamProgram, PlayerState, PlayerError } from '../../shared';
+import { StreamLayerComponent, StreamProgram, PlayerState, PlayerError } from '../../shared';
 import { AuthServiceAdapter } from '../../../infrastructure/adapters/auth-service.adapter';
 import { MenuLayerComponent } from '../../shared/components/menu-layer/menu-layer.component';
 import { CredentialStoragePort } from '../../../core/ports/outbound/credential-storage.port';
@@ -7,16 +7,17 @@ import { CREDENTIAL_STORAGE_PORT } from '../../../core/ports/outbound/tokens';
 import { SearchService } from '../../core/application/search.service';
 import { EpgService } from '../../core/application/epg.service';
 import { Stream } from '../../../core/domain/entities/stream.entity';
+import { StreamControllerComponent } from './components/stream-controller/stream-controller.component';
 
 @Component({
   selector: 'app-player',
   standalone: true,
-  imports: [StreamPlayerComponent, StreamLayerComponent, MenuLayerComponent],
+  imports: [StreamLayerComponent, MenuLayerComponent, StreamControllerComponent],
   templateUrl: './player.component.html',
   styleUrl: './player.component.scss',
 })
 export class PlayerComponent implements OnInit, OnDestroy {
-  @ViewChild(StreamPlayerComponent) player!: StreamPlayerComponent;
+  @ViewChild(StreamControllerComponent) player!: StreamControllerComponent;
 
   private hideTimeout: ReturnType<typeof setTimeout> | null = null;
   private retryTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -196,7 +197,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
 
   protected onToggleMute(): void {
     if (this.player) {
-      this.player.isMuted() ? this.player.unmute() : this.player.mute();
+      this.player.isMutedMethod() ? this.player.unmute() : this.player.mute();
       this.isMuted.set(!this.isMuted());
     }
   }
@@ -205,6 +206,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
     const volPercent = Math.round(volume * 100);
     this.volume.set(volPercent);
     localStorage.setItem('kwick_last_volume', volPercent.toString());
+    this.player?.setVolume(volume);
   }
 
   protected onChannelChange(channel: Stream): void {
