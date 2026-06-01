@@ -1,12 +1,14 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
-import { IPTV_API_PORT } from '../../../core/ports/outbound/tokens';
+import { AUTH_SERVICE_PORT } from '../../../core/ports/outbound/tokens';
 import { Stream } from '../../../core/domain/entities/stream.entity';
-import { AuthServiceAdapter } from '../../../infrastructure/adapters/auth-service.adapter';
+import { GetLivestreamsUseCase } from '../../../core/application/use-cases/get-livestreams.use-case';
+import { GetCategoriesUseCase } from '../../../core/application/use-cases/get-categories.use-case';
 
 @Injectable({ providedIn: 'root' })
 export class SearchService {
-  private readonly api = inject(IPTV_API_PORT);
-  private readonly auth = inject(AuthServiceAdapter);
+  private readonly authService = inject(AUTH_SERVICE_PORT);
+  private readonly getLivestreamsUseCase = inject(GetLivestreamsUseCase);
+  private readonly getCategoriesUseCase = inject(GetCategoriesUseCase);
 
   private readonly channelsCache = signal<Stream[]>([]);
   private readonly categoryMap = signal<Map<number | string, string>>(new Map());
@@ -24,9 +26,9 @@ export class SearchService {
   });
 
   getCategoryName(categoryId: number | string): string {
-    return this.categoryMap().get(categoryId) ?? 
-           this.categoryMap().get(String(categoryId)) ?? 
-           this.categoryMap().get(Number(categoryId)) ?? 
+    return this.categoryMap().get(categoryId) ??
+           this.categoryMap().get(String(categoryId)) ??
+           this.categoryMap().get(Number(categoryId)) ??
            `Category ${categoryId}`;
   }
 
@@ -39,7 +41,7 @@ export class SearchService {
       return;
     }
 
-    const credentials = this.auth.getStreamCredentials();
+    const credentials = this.authService.getStreamCredentials();
     if (!credentials) {
       return;
     }
@@ -48,13 +50,13 @@ export class SearchService {
     try {
       const [streams, categories] = await Promise.all([
         new Promise<Stream[]>((resolve, reject) => {
-          this.api.getLivestreams(credentials.host, `${credentials.username}:${credentials.password}`, undefined).subscribe({
+          this.getLivestreamsUseCase.execute({ credentials: { host: credentials.host, authToken: `${credentials.username}:${credentials.password}` } }).subscribe({
             next: resolve,
             error: reject,
           });
         }),
         new Promise<any[]>((resolve, reject) => {
-          this.api.getCategories(credentials.host, `${credentials.username}:${credentials.password}`).subscribe({
+          this.getCategoriesUseCase.execute({ credentials: { host: credentials.host, authToken: `${credentials.username}:${credentials.password}` } }).subscribe({
             next: resolve,
             error: reject,
           });
