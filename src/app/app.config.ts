@@ -5,13 +5,16 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { routes } from './app.routes';
 import { httpErrorInterceptor } from '../infrastructure/interceptors/http-error.interceptor';
 import { LoginUseCase } from '../core/application/use-cases/login.use-case';
+import { GetLivestreamsUseCase } from '../core/application/use-cases/get-livestreams.use-case';
+import { GetCategoriesUseCase } from '../core/application/use-cases/get-categories.use-case';
+import { GetEPGUseCase } from '../core/application/use-cases/get-epg.use-case';
 import { XtreamHttpAdapter } from '../infrastructure/http/xtream-http.adapter';
-import { WebCryptoAdapter } from '../infrastructure/crypto/web-crypto.adapter';
 import { CredentialDbAdapter } from '../infrastructure/storage/credential-db.adapter';
+import { AuthServiceAdapter } from '../infrastructure/adapters/auth-service.adapter';
 import {
   IPTV_API_PORT,
-  ENCRYPTION_PORT,
   CREDENTIAL_STORAGE_PORT,
+  AUTH_SERVICE_PORT,
 } from '../core/ports/outbound/tokens';
 
 export const appConfig: ApplicationConfig = {
@@ -20,11 +23,14 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(withInterceptors([httpErrorInterceptor])),
     XtreamHttpAdapter,
-    WebCryptoAdapter,
     CredentialDbAdapter,
+    AuthServiceAdapter,
     { provide: IPTV_API_PORT, useExisting: XtreamHttpAdapter },
-    { provide: ENCRYPTION_PORT, useExisting: WebCryptoAdapter },
     { provide: CREDENTIAL_STORAGE_PORT, useExisting: CredentialDbAdapter },
+    { provide: AUTH_SERVICE_PORT, useExisting: AuthServiceAdapter },
     LoginUseCase,
+    GetLivestreamsUseCase,
+    GetCategoriesUseCase,
+    GetEPGUseCase,
   ]
 };
