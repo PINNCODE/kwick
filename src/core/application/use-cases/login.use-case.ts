@@ -1,4 +1,3 @@
-import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { AuthResult } from '../../domain/entities/auth-result.entity';
 import { IptvApiPort } from '../../ports/outbound/iptv-api.port';
@@ -21,7 +20,6 @@ export type LoginOutput = AuthResult;
 
 export type LoginError = IptvApiException;
 
-@Injectable()
 export class LoginUseCase {
   constructor(
     @Inject(IPTV_API_PORT) private readonly apiPort: IptvApiPort,

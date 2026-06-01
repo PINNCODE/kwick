@@ -8,6 +8,12 @@ export interface LoginCredentials {
   host: string;
 }
 
+export interface StreamCredentials {
+  host: string;
+  username: string;
+  password: string;
+}
+
 export interface AuthService {
   login(credentials: LoginCredentials): Observable<AuthResult>;
   restoreSession(): Promise<boolean>;
@@ -15,4 +21,5 @@ export interface AuthService {
   getCurrentAuthResult(): AuthResult | null;
   isAuthenticated(): boolean;
   logout(): Promise<void>;
+  getStreamCredentials(): StreamCredentials | null;
 }

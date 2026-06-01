@@ -1,8 +1,8 @@
-export type { GetCategoriesError, GetCategoriesInput, GetCategoriesOutput } from './get-categories.use-case';
+export type { GetCategoriesInput, GetCategoriesOutput } from './get-categories.use-case';
 export { GetCategoriesUseCase } from './get-categories.use-case';
 export type { GetEPGError, GetEPGInput, GetEPGOutput } from './get-epg.use-case';
 export { GetEPGUseCase } from './get-epg.use-case';
-export type { GetLivestreamsError, GetLivestreamsInput, GetLivestreamsOutput } from './get-livestreams.use-case';
+export type { GetLivestreamsInput, GetLivestreamsOutput } from './get-livestreams.use-case';
 export { GetLivestreamsUseCase } from './get-livestreams.use-case';
 export type { GetStreamUrlInput, GetStreamUrlOutput } from './get-stream-url.use-case';
 export { GetStreamUrlUseCase } from './get-stream-url.use-case';
